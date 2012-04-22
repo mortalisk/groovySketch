@@ -37,7 +37,7 @@ import org.lwjgl.opengl.DisplayMode;
 
 /**
  * <br>
- * Test class for Display & DisplayMode
+ * First class for Display & DisplayMode
  *
  * @author Brian Matzon <brian@matzon.dk>
  * @version $Revision: 3418 $
@@ -65,7 +65,7 @@ public class DisplayTest {
      * Prints some info about the current mode
      */
     private void currentTest() {
-        System.out.println("==== Test Current ====");
+        System.out.println("==== First Current ====");
 
         System.out.println("Info about current:");
         System.out.println("Graphics card: " + Display.getAdapter() + ", version: " + Display.getVersion());
@@ -74,7 +74,7 @@ public class DisplayTest {
                 Display.getDisplayMode().getHeight()     + "x" +
                 Display.getDisplayMode().getBitsPerPixel()      + "@" +
                 Display.getDisplayMode().getFrequency()  + "Hz");
-        System.out.println("---- Test Current ----");
+        System.out.println("---- First Current ----");
     }
 
     /**
@@ -83,7 +83,7 @@ public class DisplayTest {
     private void queryModesTest() throws LWJGLException {
         DisplayMode[] modes = null;
 
-        System.out.println("==== Test query ====");
+        System.out.println("==== First query ====");
         System.out.println("Retrieving available displaymodes");
         modes = Display.getAvailableDisplayModes();
 
@@ -102,7 +102,7 @@ public class DisplayTest {
                 break;
             }
         }
-        System.out.println("---- Test query ----");
+        System.out.println("---- First query ----");
     }
 
 
@@ -113,7 +113,7 @@ public class DisplayTest {
         DisplayMode mode = null;
         DisplayMode[] modes = null;
 
-        System.out.println("==== Test setDisplayMode ====");
+        System.out.println("==== First setDisplayMode ====");
         System.out.println("Retrieving available displaymodes");
         modes = Display.getAvailableDisplayModes();
 
@@ -169,14 +169,14 @@ public class DisplayTest {
         }
         System.out.println("done");
 
-        System.out.println("---- Test setDisplayMode ----");
+        System.out.println("---- First setDisplayMode ----");
     }
 
     /**
      * Tests the DisplayConfiguration
      */
     private void setDisplayConfigurationTest() {
-        System.out.println("==== Test setDisplayConfigurationTest ====");
+        System.out.println("==== First setDisplayConfigurationTest ====");
 
         System.out.println("Testing normal setting");
         changeConfig(1.0f, 0f, 1f);
@@ -204,7 +204,7 @@ public class DisplayTest {
         }
         System.out.println("done");
 
-        System.out.println("---- Test setDisplayConfigurationTest ----");
+        System.out.println("---- First setDisplayConfigurationTest ----");
     }
 
     /**
