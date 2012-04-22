@@ -1,0 +1,7 @@
+*.log
+.gradle/
+.idea/
+build/
+classes/
+dist/
+groovySketch.iml

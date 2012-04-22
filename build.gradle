@@ -1,7 +1,7 @@
 apply plugin: 'groovy'
 apply plugin:'application'
 
-mainClassName = "morten.First"
+mainClassName = "morten.MyGlWidget"
 
 repositories {
     mavenCentral()
