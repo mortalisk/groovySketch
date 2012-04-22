@@ -1,0 +1,41 @@
+apply plugin: 'groovy'
+apply plugin:'application'
+
+mainClassName = "morten.DisplayTest"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    groovy          group: 'org.codehaus.groovy',   name: 'groovy',         version: '1.8.6'
+    compile         group: 'org.lwjgl.lwjgl',	    name: 'lwjgl',          version: 	'2.8.3'
+    compile         group: 'org.lwjgl.lwjgl',	    name: 'lwjgl-platform', version: '2.8.3'
+}
+
+task cleanOldNatives << {
+    ant.delete() {
+        fileset(dir:"dist") {
+            include(name:"**/*.so")
+            include(name:"**/*.dll")
+            include(name:"**/*.jnilib")
+            include(name:"**/*.dylib")
+        }
+    }
+    ant.delete(dir:"src/dist/bin/META-INF")
+}
+
+task unpackNatives(dependsOn: cleanOldNatives) << {
+    configurations.compile.files.each { file ->
+        if (file.name.matches(".*native.*")) {
+            logger.debug("Unpacking " + file.name + " into dist...")
+// This destination is to work with the plugin conventions
+            ant.unzip(src:file, dest:"dist/bin", overwrite:"true")
+        }
+    }
+    ant.delete(dir:"dist/bin/META-INF")
+}
+
+run {
+    jvmArgs += '-Djava.library.path=dist/bin'
+}
