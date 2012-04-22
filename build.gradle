@@ -1,7 +1,7 @@
 apply plugin: 'groovy'
 apply plugin:'application'
 
-mainClassName = "morten.MyGlWidget"
+mainClassName = "gui.MyGlWidget"
 
 repositories {
     mavenCentral()
@@ -12,6 +12,7 @@ dependencies {
     compile         group: 'org.lwjgl.lwjgl',	    name: 'lwjgl',          version: 	'2.8.3'
     compile         group: 'org.lwjgl.lwjgl',	    name: 'lwjgl-platform', version: '2.8.3'
     compile         group: 'org.lwjgl.lwjgl',	    name: 'lwjgl_util', version: '2.8.3'
+    compile         group: 'java3d',	    name: 'vecmath', version: '1.3.1'
 }
 
 task cleanOldNatives << {
