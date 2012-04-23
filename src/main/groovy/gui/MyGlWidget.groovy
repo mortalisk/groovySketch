@@ -19,29 +19,43 @@ import java.awt.event.MouseWheelEvent
 import geometry.Vector3
 import java.awt.Color
 import javax.swing.WindowConstants
+import java.nio.FloatBuffer
+import org.lwjgl.BufferUtils
+import java.awt.event.ComponentListener
+import java.awt.event.ComponentEvent
+import geometry.Camera
+import java.awt.Cursor
+import java.awt.Point
+import java.awt.image.BufferedImage
 
-class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelListener{
+class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelListener, ComponentListener{
     Scene scene = new Scene();
-    Map<Integer,Boolean> keys;
-    Map<Integer,Boolean> mouse;
+    Map<Integer,Boolean> keys = [:]
+    Map<Integer,Boolean> mouse = [:]
     int previousMouseX;
     int previousMouseY;
     boolean mouseMoved;
-    float aspect;
+    float aspect = 1;
     float move;
-    Stack<Scene> stack;
-    Vector4d light_diffuse = new Vector4d(0.33, 0.33, 0.33, 1.0);
-    Vector4d light_ambient = new Vector4d(0.2, 0.2, 0.2, 1.0);  /* light. */
-    Vector4d light_specular = new Vector4d(1.0,1.0,1.0, 1.0);
-    Vector4d light_position1 = new Vector4d(0.0, 1.0, 1.0, 0.0);  /* Infinite light location. */
-    Vector4d light_position2 = new Vector4d(1.0, 1.0, -1.0, 0.0);
-    Vector4d light_position3 = new Vector4d(-1.0, 1.0, -1.0, 0.0);
+    Stack<Scene> stack = new Stack<Scene>()
+    float[] light_diffuse = [0.33, 0.33, 0.33, 1.0]
+    float[]  light_ambient = [0.2, 0.2, 0.2, 1.0]  /* light. */
+    float[]  light_specular = [1.0,1.0,1.0, 1.0]
+    float[]  light_position1 = [0.0, 1.0, 1.0, 0.0] /* Infinite light location. */
+    float[]  light_position2 = [1.0, 1.0, -1.0, 0.0]
+    float[]  light_position3 = [-1.0, 1.0, -1.0, 0.0]
 
 
     MyGlWidget() {
         addMouseListener(this)
         addMouseMotionListener(this)
         addMouseWheelListener(this)
+        addComponentListener(this)
+        cursor = toolkit.createCustomCursor(new BufferedImage(3, 3, BufferedImage.TYPE_INT_ARGB), new Point(0, 0),"null")
+    }
+
+    void componentResized(ComponentEvent e) {
+        aspect = width/height;
     }
 
     void mouseEntered(MouseEvent e) {
@@ -57,35 +71,86 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
     }
 
     void mousePressed(MouseEvent e) {
+        int button = e.button
+        mouse[button] = true
 
+        mouseMoved = false
+        previousMouseX = e.x
+        previousMouseY = e.y
+        if (isMousePressed(MouseEvent.BUTTON1)) {
+            addPoint(e)
+        }
     }
 
     void mouseReleased(MouseEvent e) {
+        int button = e.button
+        mouse[button] = false
 
+        if (!mouseMoved && e.button == MouseEvent.BUTTON3) {
+            Vector3 dir = findMouseDirection(e)
+            scene.selectActiveNode(scene.camera.position, dir)
+        }
+
+        if (mouseMoved && e.button == MouseEvent.BUTTON1) {
+            scene.activeNode.determineActionOnStoppedDrawing()
+            println "pushing scene to stack"
+
+            pushScene()
+        }
     }
 
-    boolean isMousePressed(button) {
-
+    boolean isMousePressed(int button) {
+        return mouse[button]
     }
 
     void addPoint(MouseEvent e) {
-
+        Vector3 dir = findMouseDirection(e)
+        scene.addPoint(scene.camera.position, dir)
     }
 
     void mouseMoved(MouseEvent e) {
+        Vector3 dir = findMouseDirection(e);
+        scene.showCursor(scene.camera.position,dir);
+        mouseMoved = true;
 
+        previousMouseX = e.x;
+        previousMouseY = e.y;
     }
 
     void mouseDragged(MouseEvent e) {
+        if (isMousePressed(MouseEvent.BUTTON3)) {
+            int movex = e.x -previousMouseX;
+            int movey = e.y -previousMouseY;
+            scene.camera.goUp(movey/100.0);
+            scene.camera.goRight(-movex/100.0);
+        }else if (isMousePressed(MouseEvent.BUTTON1)) {
+            addPoint(e);
+        }
+        Vector3 dir = findMouseDirection(e);
+        scene.showCursor(scene.camera.position,dir);
 
+        mouseMoved = true;
+
+        previousMouseX = e.x;
+        previousMouseY = e.y;
     }
 
     void mouseWheelMoved(MouseWheelEvent e) {
-
+        scene.camera.goForward(e.wheelRotation);
     }
 
     Vector3 findMouseDirection(MouseEvent e) {
-
+        // cursor move
+        float a = scene.camera.fov/2.0f
+        float h = this.height/2.0f
+        float w = this.width/2.0f
+        float l = h/Math.tan(a)
+        Vector3 forw = scene.camera.forward.normalize()*l
+        float u = h - e.y
+        float r = e.x - w
+        Vector3 up = scene.camera.up.normalize()*u
+        Vector3 right = forw.cross(scene.camera.up).normalize()*r
+        return scene.camera.position + forw + up + right
     }
 
     void checkInput() {
@@ -93,7 +158,8 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
     }
 
     void pushScene() {
-
+        stack.push(new Scene(scene));
+        sceneChanged(scene);
     }
 
     void toggleVisibility(int i) {
@@ -122,42 +188,96 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
     }
 
     void undo() {
+        Camera c = scene.camera;
+        if (stack.size() > 1) {
+            scene = stack.pop();
+            scene = stack.pop();
+        }
+        pushScene();
 
+        scene.camera = c;
+
+        sceneChanged(scene);
     }
 
     protected void initGL() {
-        glClearColor(1,1,1,0)
+        glClearColor(0.8,0.8,1,0)
+
+        glEnable (GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_DEPTH_TEST);
+        //glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        glEnable(GL_LIGHT1);
+        glEnable(GL_LIGHT2);
+        glEnable(GL_NORMALIZE);
+
+
+
+        def lightDiffuse = makeBuffer(light_diffuse)  /* diffuse light. */
+        def lightAmbient = makeBuffer(light_ambient)
+        def lightSpecular = makeBuffer(light_specular)
+        def lightPosition1 = makeBuffer(light_position1)
+        def lightPosition2 = makeBuffer(light_position2)
+        def lightPosition3 = makeBuffer(light_position3)
+
+
+        glLight(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+        glLight(GL_LIGHT0, GL_AMBIENT, lightAmbient);
+        glLight(GL_LIGHT0, GL_SPECULAR, lightSpecular);
+        glLight(GL_LIGHT0, GL_POSITION, lightPosition1);
+
+        glLight(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
+        glLight(GL_LIGHT1, GL_AMBIENT, lightAmbient);
+        glLight(GL_LIGHT1, GL_SPECULAR, lightSpecular);
+        glLight(GL_LIGHT1, GL_POSITION, lightPosition2);
+
+        glLight(GL_LIGHT2, GL_DIFFUSE, lightDiffuse);
+        glLight(GL_LIGHT2, GL_AMBIENT, lightAmbient);
+        glLight(GL_LIGHT2, GL_SPECULAR, lightSpecular);
+        glLight(GL_LIGHT2, GL_POSITION, lightPosition3);
+    }
+
+    FloatBuffer makeBuffer(float []c) {
+        FloatBuffer buf = BufferUtils.createFloatBuffer(4)
+        buf.put(c[0])
+        buf.put(c[1])
+        buf.put(c[2])
+        buf.put(c[3])
+        buf.rewind()
+        return buf
     }
 
     protected void paintGL() {
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        println("Width : "+width+" Height: "+height);
-        if(height==0)height=1;
-        glViewport(0, 0, width, height);                       // Reset The Current Viewport And Perspective Transformation
-        glMatrixMode(GL_PROJECTION);                           // Select The Projection Matrix
-        glLoadIdentity();                                      // Reset The Projection Matrix
-        gluPerspective(45.0f, width / height, 0.1f, 100.0f);  // Calculate The Aspect Ratio Of The Window
-        glMatrixMode(GL_MODELVIEW);                            // Select The Modelview Matrix
+
+        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+        gluPerspective((float)scene.camera.fov*180/Math.PI, aspect, 0.1f, 1000f);
 
-        scene.getRootNode().draw();
-        println 'paintGL'
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);       //Clear The Screen And The Depth Buffer
-//        glLoadIdentity();                                         //Reset The View
-//        glTranslatef(-1.5f,0.0f,-8.0f);						// Move Left 1.5 Units And Into The Screen 8(not 6.0 like VC.. not sure why)
-//        glBegin(GL_TRIANGLES);								// Drawing Using Triangles
-//        glVertex3f( 0.0f, 1.0f, 0.0f);					// Top
-//        glVertex3f(-1.0f,-1.0f, 0.0f);					// Bottom Left
-//        glVertex3f( 1.0f,-1.0f, 0.0f);					// Bottom Right
-//        glEnd();											// Finished Drawing The Triangle
-//        glTranslatef(3.0f,0.0f,0.0f);						// Move Right 3 Units
-//        glBegin(GL_QUADS);									// Draw A Quad
-//        glVertex3f(-1.0f, 1.0f, 0.0f);					// Top Left
-//        glVertex3f( 1.0f, 1.0f, 0.0f);					// Top Right
-//        glVertex3f( 1.0f,-1.0f, 0.0f);					// Bottom Right
-//        glVertex3f(-1.0f,-1.0f, 0.0f);					// Bottom Left
-//        glEnd();
+        glViewport(0,0,width,height);
 
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        gluLookAt((float)scene.camera.position.x,
+                (float)scene.camera.position.y,
+                (float)scene.camera.position.z,
+                (float)scene.camera.looksAt().x,
+                (float)scene.camera.looksAt().y,
+                (float)scene.camera.looksAt().z,
+                (float)scene.camera.up.x,
+                (float)scene.camera.up.y,
+                (float)scene.camera.up.z);
+
+
+        scene.getRootNode().draw()
+        scene.cursor.draw()
+
+
+        glLightModelf(GL_LIGHT_MODEL_LOCAL_VIEWER, 1.0f);
 
         swapBuffers();
         repaint();

@@ -1,4 +1,7 @@
 package geometry
+
+import javax.vecmath.Vector4d
+
 class SideNode extends BaseNode {
     SideNode opposite;
     SideNode left;
@@ -8,7 +11,43 @@ class SideNode extends BaseNode {
     Vector3 upperRigth;
     Vector3 upperLeft;
     SideNode(Vector3 lowerLeft,Vector3 lowerRigth, Vector3 upperRigth,Vector3 upperLeft) {
-         super("sidenode")
+
+        super("sidenode")
+        this.lowerLeft = lowerLeft
+        this.lowerRigth = lowerRigth
+        this.upperRigth = upperRigth
+        this.upperLeft = upperLeft
+
+        List<Vector3> vertices = [];
+        List<Vector3> normals = [];
+
+        List<Vector3> lineVertices = [];
+        Vector3 normal = (lowerRigth - lowerLeft).cross((upperRigth-lowerLeft)).normalize();
+        Vector4d c = new Vector4d(1.0, 1.0, 1.0, 0.5);
+
+        //Front
+        vertices.add(lowerLeft);
+        vertices.add(lowerRigth);
+        vertices.add(upperLeft);
+
+        vertices.add(upperLeft);
+        vertices.add(lowerRigth);
+        vertices.add(upperRigth);
+
+        normals.add(normal);
+        normals.add(normal);
+        normals.add(normal);
+        normals.add(normal);
+        normals.add(normal);
+        normals.add(normal);
+
+        lineVertices.add(lowerLeft);
+        lineVertices.add(lowerRigth);
+        lineVertices.add(upperRigth);
+        lineVertices.add(upperLeft);
+        lineVertices.add(lowerLeft);
+
+        this.shape = new Surface(vertices,normals, lineVertices);
     }
     SideNode(SideNode o) {
         super(o)
@@ -29,8 +68,8 @@ class SideNode extends BaseNode {
     }
 
     boolean isPointNearerSide(Vector3 point, int indexInSpline) {
-        def  leftSide = new Vector3(lowerLeft.x(), point.y(), lowerLeft.z())
-        def  rightSide = new Vector3(lowerRigth.x(), point.y(), lowerRigth.z())
+        def  leftSide = new Vector3(lowerLeft.x, point.y, lowerLeft.z)
+        def  rightSide = new Vector3(lowerRigth.x, point.y, lowerRigth.z)
         Vector3 inSpline = spline.points[indexInSpline]
 
         float distLeft = (leftSide-point).lenght()
@@ -39,13 +78,13 @@ class SideNode extends BaseNode {
         return distLeft < distSpline || distRight < distSpline
     }
 
-    void addInterpolatedSuggestion(float yLeft, float yRight) {
+    void addInterpolatedSuggestion(double yLeft, double yRight) {
         ensureLeftToRigth()
         if(spline.isSuggestion) {
             spline.points.clear()
 
-            def pointA = new Vector3(lowerLeft.x(), yLeft, lowerLeft.z())
-            def pointB = new Vector3(lowerRigth.x(), yRight, lowerRigth.z())
+            def pointA = new Vector3(lowerLeft.x, yLeft, lowerLeft.z)
+            def pointB = new Vector3(lowerRigth.x, yRight, lowerRigth.z)
             for (float i = 0.0; i<1.01; i+=0.05) {
                 Vector3 add = interpolate(pointA, pointB, i)
                 spline.addPoint(add)
@@ -65,10 +104,10 @@ class SideNode extends BaseNode {
                 previous = spline.points[i];
                 float w = along/length;
                 float targetY = yLeft*(1.0-w) + yRight*w;
-                float lineY = first.y()*(1.0-w)+last.y()*w;
-                float diff = spline.points[i].y() - lineY;
+                float lineY = first.y*(1.0-w)+last.y*w;
+                float diff = spline.points[i].y - lineY;
                 float newY = targetY + diff;
-                spline.points[i] = Vector3(spline.points[i].x(), newY, spline.points[i].z());
+                spline.points[i] = Vector3(spline.points[i].x, newY, spline.points[i].z);
             }
         }
     }
@@ -83,11 +122,13 @@ class SideNode extends BaseNode {
         }
     }
 
-    void setOpposite(SideNode node) {
-
+    void assignOpposites(SideNode node) {
+        this.opposite = node;
+        node.opposite = this;
     }
-    void setLeft(SideNode node) {
-
+    void assignLeft(SideNode node) {
+        this.left = node;
+        node.right = this;
     }
     void makeSuggestionLines() {
 

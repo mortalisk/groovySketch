@@ -4,11 +4,7 @@ import static org.lwjgl.opengl.GL11.*
 class BoxNode extends BaseNode {
     BoxNode() {
        super("boxnode")
-    }
-
-    BoxNode(BoxNode other) {
-        super(other);
-        activeSurface = NULL;
+        activeSurface = null;
         width = 10;
         depth = 10;
         heigth = 10;
@@ -53,15 +49,30 @@ class BoxNode extends BaseNode {
         setUpSurfaces();
     }
 
-    void setUpSurfaces() {
-        frontNode.setOpposite(backNode);
-        leftNode.setOpposite(rightNode);
-        topNode.setOpposite(bottomNode);
+    BoxNode(BoxNode other) {
+        super(other);
 
-        frontNode.setLeft(leftNode);
-        leftNode.setLeft(backNode);
-        backNode.setLeft(rightNode);
-        rightNode.setLeft(frontNode);
+        frontNode =other.frontNode.copy()
+        backNode = other.backNode.copy()
+        topNode =other.topNode.copy()
+        bottomNode =other.bottomNode.copy()
+        leftNode = other.leftNode.copy()
+        rightNode =other.rightNode.copy()
+
+        setUpSurfaces();
+
+        activeSurface = null;
+    }
+
+    void setUpSurfaces() {
+        frontNode.assignOpposites(backNode);
+        leftNode.assignOpposites(rightNode);
+        topNode.assignOpposites(bottomNode);
+
+        frontNode.assignLeft(leftNode);
+        leftNode.assignLeft(backNode);
+        backNode.assignLeft(rightNode);
+        rightNode.assignLeft(frontNode);
 
         surfaces.add(frontNode);
         surfaces.add(backNode);
@@ -79,12 +90,56 @@ class BoxNode extends BaseNode {
     List<SideNode> surfaces = []
     SideNode activeSurface;
     void addPoint(Vector3 from, Vector3 direction) {
+        // we must find the nearest intersection point
+        float candidateDistance = Float.MAX_VALUE;
+        Vector3 candidatePoint;
+        SideNode candidate = null;
 
+        surfaces.each { s ->
+            List<Vector3> points = s.intersectionPoints(from, direction);
+            if (points.size() >0 ) {
+                float dist = (points[0]-from).lenght();
+                if ((activeSurface == null || s == activeSurface) && dist < candidateDistance) {
+                    candidateDistance = dist;
+                    candidatePoint = points[0];
+                    candidate=s;
+                }
+
+            }
+        }
+
+        if (candidate) {
+            candidate.sketchingSpline.addPoint(candidatePoint);
+
+
+            activeSurface = candidate;
+        }
     }
     void determineActionOnStoppedDrawing() {
+        if (activeSurface.is(topNode)||activeSurface.is(bottomNode)){
+            activeSurface.spline.clear();
+            activeSurface.sketchingSpline.clear();
+            activeSurface = null;
+            return;
+        }
+        if (activeSurface) {
+            activeSurface.correctSketchingDirection();
 
+            if (activeSurface.spline.getPoints().size() == 0) {
+                activeSurface.moveSketchingPointsToSpline();
+            } else {
+                activeSurface.doOversketch();
+            }
+
+            activeSurface.makeSuggestionLines();
+
+            makeSuggestionFor(activeSurface);
+
+            activeSurface = null;
+        }
     }
     void draw() {
+
         glPushMatrix();
         glDisable(GL_CULL_FACE);
 
@@ -101,6 +156,7 @@ class BoxNode extends BaseNode {
     }
     void drawSelf() {
         //Node::drawSelf();
+
         glTranslated(position.x, position.y, position.z);
 
         glDisable(GL_LIGHTING);
@@ -109,29 +165,69 @@ class BoxNode extends BaseNode {
             it.drawSplines();
             it.shape.drawLines(false);
         }
+
         surfaces.each {
             glColor4f(0.5,0.5,0.5,0.5);
             it.shape.drawShape(ambient, diffuse);
         }
 
+
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
+
     }
     BaseNode makeLayer() {
 
     }
     void makeSuggestionFor(SideNode side) {
+        if (side.opposite.spline.isSuggestion && side.left.spline.isSuggestion && side.right.spline.isSuggestion) {
+            side.opposite.spline.clear();
 
+            // project points from this side to opposite
+            Vector3 direction = side.opposite.lowerRigth - side.lowerLeft;
+            side.opposite.projectPoints(direction, side.spline.getPoints());
+
+            side.opposite.spline.isSuggestion = true;
+        }
+
+        Vector3 left = side.spline.getLeftPoint();
+        Vector3 right = side.spline.getRightPoint();
+        Vector3 leftOpposite = side.opposite.spline.getLeftPoint();
+        Vector3 rightOpposite = side.opposite.spline.getRightPoint();
+
+        side.left.addInterpolatedSuggestion(rightOpposite.y, left.y);
+        side.right.addInterpolatedSuggestion(right.y, leftOpposite.y);
+
+        frontNode.ensureLeftToRigth();
+        rightNode.ensureLeftToRigth();
+        backNode.ensureLeftToRigth();
+        leftNode.ensureLeftToRigth();
+
+        side.spline.isSuggestion = false;
     }
 
     List<Vector3> intersectionPoints(Vector3 from, Vector3 direction) {
-
+        List<Vector3> p = new ArrayList<Vector3>();
+        float d = intersectionPoint(from, direction);
+        if (d < Float.MAX_VALUE) {
+            p.add(from + (direction.normalize()*d));
+        }
+        return p;
     }
     float intersectionPoint(Vector3 from, Vector3 direction) {
-
+        float dist = Float.MAX_VALUE
+        surfaces.each { s ->
+            List<Vector3> points = s.intersectionPoints(from, direction);
+            if (points.size() >0) {
+                Vector3 p = points[0]
+                float d = (p-from).lenght()
+                if (d < dist) dist = d
+            }
+        }
+        return dist;
     }
 
     BoxNode copy() {
-        return new BoxNode(*this);
+        return new BoxNode(this)
     }
 }

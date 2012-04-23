@@ -2,7 +2,7 @@ package geometry
 class GeneralNode extends BaseNode
 {
     GeneralNode(Shape shape, String name) {
-         super("generalnode")
+         super(shape,"generalnode")
     }
     GeneralNode(BaseNode o) {
         super(o)

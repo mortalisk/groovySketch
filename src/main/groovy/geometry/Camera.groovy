@@ -2,10 +2,21 @@ package geometry
 
 class Camera {
     Camera() {
-
+        position = new Vector3(10, 10, 10)
+        forward = new Vector3(-1, -1, -1)
+        up = new Vector3(-1, 1, -1)
+        fov = Math.PI/2
+        forward = forward.normalize();
+        up = up.normalize();
+        fix();
+        trackMode = TrackMode.FIRST_PERSON;
     }
     Camera(Vector3 pos, Vector3 forward, Vector3 up) {
-
+        position = pos
+        forward = forw
+        up = ups
+        fov = Math.PI/2
+        fix()
     }
     enum TrackMode {FIRST_PERSON, SPHERE_TRACK, BOX_TRACK}
     TrackMode trackMode;
@@ -44,7 +55,7 @@ class Camera {
     }
 
     void goForward(double length) {
-        if (trackMode == SPHERE_TRACK) {
+        if (trackMode == TrackMode.SPHERE_TRACK) {
             trackDistance += length;
         } else {
             position = (position + (forward * length));

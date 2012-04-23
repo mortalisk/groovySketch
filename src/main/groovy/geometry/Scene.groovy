@@ -27,16 +27,40 @@ class Scene {
 
     }
 
-    void showCursor(Vector3 point, Vector3 dir) {
-
+    void showCursor(Vector3 from, Vector3 direction) {
+        List<Vector3> points = activeNode.intersectionPoints(from,direction);
+        if ( points.size() > 0) {
+            float x = points[0].x;
+            float y = points[0].y;
+            float z = points[0].z;
+            if (snapToGrid) {
+                x = Math.round( x / resolution)*resolution;
+                y = Math.round( y / resolution)*resolution;
+                z = Math.round( z / resolution)*resolution;
+            }
+            cursor.position = new Vector3(x,y,z);
+            onSurface = true;
+        } else {
+            Vector3 pos = camera.position + direction.normalize()*5;
+            cursor.position = pos;
+            onSurface = false;
+        }
     }
 
     void addPoint(Vector3 from, Vector3 direction) {
-
+        if (onSurface) {
+            activeNode.addPoint(from, direction);
+        }
     }
 
     void selectActiveNode(Vector3 from, Vector3 direction) {
 
+        Vector3 point;
+        activeNode.setActive(false);
+        activeNode = boxNode.findIntersectingNode(from, direction, point);
+        if (activeNode == null)
+            activeNode = boxNode;
+        activeNode.setActive(true);
     }
 
     void makeLayer() {
