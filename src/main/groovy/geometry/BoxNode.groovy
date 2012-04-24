@@ -2,6 +2,11 @@ package geometry
 
 import static org.lwjgl.opengl.GL11.*
 class BoxNode extends BaseNode {
+
+    float width, depth, heigth
+
+    SideNode frontNode,  backNode,  leftNode,  rightNode,  topNode,  bottomNode
+
     BoxNode() {
        super("boxnode")
         activeSurface = null;
@@ -54,10 +59,10 @@ class BoxNode extends BaseNode {
 
         frontNode =other.frontNode.copy()
         backNode = other.backNode.copy()
-        topNode =other.topNode.copy()
-        bottomNode =other.bottomNode.copy()
         leftNode = other.leftNode.copy()
         rightNode =other.rightNode.copy()
+        topNode =other.topNode.copy()
+        bottomNode =other.bottomNode.copy()
 
         setUpSurfaces();
 
@@ -82,9 +87,6 @@ class BoxNode extends BaseNode {
         surfaces.add(bottomNode);
     }
 
-    float width, depth, heigth
-
-    SideNode frontNode,  backNode,  leftNode,  rightNode,  topNode,  bottomNode
 
     float topF, bottomF ,rightF ,leftF ,farF , nearF
     List<SideNode> surfaces = []
@@ -177,7 +179,37 @@ class BoxNode extends BaseNode {
 
     }
     BaseNode makeLayer() {
+        if (frontNode.spline.getPoints().size() < 1||rightNode.spline.getPoints().size() <1
+                ||backNode.spline.getPoints().size() <1||leftNode.spline.getPoints().size() <1)
+        return this;
 
+        SurfaceNode below = null;
+        if(children.size() > 0) {
+            below = (SurfaceNode)children[children.size()-1];
+        }else {
+            Spline front = new Spline();
+            Spline right = new Spline();
+            Spline back = new Spline();
+            Spline left = new Spline();
+            front.addPoint(frontNode.lowerLeft);
+            front.addPoint(frontNode.lowerRigth);
+            right.addPoint(rightNode.lowerLeft);
+            right.addPoint(rightNode.lowerRigth);
+            back.addPoint(backNode.lowerLeft);
+            back.addPoint(backNode.lowerRigth);
+            left.addPoint(leftNode.lowerLeft);
+            left.addPoint(leftNode.lowerRigth);
+            below = new SurfaceNode("Bottom", front, right, back, left, null);
+        }
+        SurfaceNode n = new SurfaceNode( "Layer", frontNode.spline, rightNode.spline, backNode.spline, leftNode.spline, below);
+        children.add(n);
+
+        surfaces.each { s ->
+            s.spline.clear();
+            s.spline.isSuggestion = true;
+        }
+
+        return n;
     }
     void makeSuggestionFor(SideNode side) {
         if (side.opposite.spline.isSuggestion && side.left.spline.isSuggestion && side.right.spline.isSuggestion) {

@@ -6,6 +6,7 @@ class Scene {
     float resolution
     boolean snapToGrid
     boolean onSurface
+    int editLayerNo
     Camera camera = new Camera()
     Sphere sphere
     Sphere cursorSphere
@@ -24,7 +25,23 @@ class Scene {
         boxNode = new BoxNode();
         camera.setTrackMode(Camera.TrackMode.SPHERE_TRACK, new Vector3(0,0,0), new Vector3(10,10,10) );
         activeNode = boxNode;
+        editLayerNo = -1;
 
+    }
+
+    Scene(Scene scene) {
+        this.resolution = scene.resolution
+
+        this.snapToGrid = scene.snapToGrid
+        this.onSurface = scene.onSurface
+        this.camera = scene.camera
+        this.sphere = scene.sphere
+        this.cursorSphere = scene.cursorSphere
+        this.cursor = scene.cursor
+        this.boxNode = scene.boxNode.copy();
+        this.cursor = new GeneralNode(this.cursorSphere, "cursor");
+        this.cursor.ambient = scene.cursor.ambient;
+        this.activeNode = this.boxNode;
     }
 
     void showCursor(Vector3 from, Vector3 direction) {
@@ -64,7 +81,38 @@ class Scene {
     }
 
     void makeLayer() {
+        if (editLayerNo == -1) {
+            activeNode = boxNode.makeLayer();
+        }
+    }
 
+    void editLayer() {
+        if (activeNode instanceof SurfaceNode && editLayerNo == -1) {
+            SurfaceNode sn = (SurfaceNode)(activeNode);
+            for (int i = 0; i< boxNode.children.size(); ++i) {
+                if (boxNode.children[i] == sn) {
+                    editLayerNo = i;
+                    break;
+                }
+            }
+            boxNode.frontNode.spline = sn.front;
+            boxNode.leftNode.spline = sn.left;
+            boxNode.rightNode.spline = sn.right;
+            boxNode.backNode.spline = sn.back;
+            sn.visible = false;
+            activeNode = boxNode;
+        } else if(editLayerNo != -1) {
+
+
+            SurfaceNode node = (SurfaceNode)(boxNode.children[editLayerNo]);
+            node.front = boxNode.frontNode.spline;
+            node.left = boxNode.leftNode.spline;
+            node.back = boxNode.backNode.spline;
+            node.right = boxNode.rightNode.spline;
+            node.invalidate();
+            node.visible = true;
+            editLayerNo = -1;
+        }
     }
 
     BaseNode getRootNode() {
@@ -73,19 +121,6 @@ class Scene {
 
     }
 
-    Scene(Scene scene) {
-        this.resolution = scene.resolution
 
-        this.snapToGrid = scene.snapToGrid
-        this.onSurface = scene.onSurface
-        this.camera = scene.camera
-        this.sphere = scene.sphere
-        this.cursorSphere = scene.cursorSphere
-        this.cursor = scene.cursor
-        this.boxNode = scene.boxNode.copy();
-        this.cursor = new GeneralNode(this.cursorSphere, "cursor");
-        this.cursor.ambient = scene.cursor.ambient;
-        this.activeNode = this.boxNode;
-    }
 
 }

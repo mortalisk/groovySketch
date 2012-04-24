@@ -1,11 +1,18 @@
 package geometry
-class Spline extends Shape {
+class Spline {
 
+
+    List<Vector3> points = [];
+    boolean isSuggestion = true;
+
+
+    Spline(Spline other) {
+        points.addAll(other.points)
+        isSuggestion = other.isSuggestion
+    }
     Spline() {
 
     }
-    List<Vector3> points = [];
-    boolean isSuggestion = true;
     void addPoint(Vector3 point) {
         points.add(point);
         isSuggestion = false;
@@ -17,7 +24,7 @@ class Spline extends Shape {
         isSuggestion = false;
     }
 
-    Vector3 getPoint(float at) {
+    Vector3 getPoint(double at) {
         if (at > 1.0) {
             at = 1.0;
         }else if (at < 0.0) {
@@ -61,7 +68,7 @@ class Spline extends Shape {
     }
 
     void reverse() {
-        points.reverse()
+        points = points.reverse()
     }
 
     void smooth() {
@@ -131,5 +138,9 @@ class Spline extends Shape {
         }
 
         return nearest;
+    }
+
+    Spline copy() {
+        return new Spline(this)
     }
 }

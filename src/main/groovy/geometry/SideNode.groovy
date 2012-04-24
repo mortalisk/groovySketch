@@ -81,7 +81,7 @@ class SideNode extends BaseNode {
     void addInterpolatedSuggestion(double yLeft, double yRight) {
         ensureLeftToRigth()
         if(spline.isSuggestion) {
-            spline.points.clear()
+            spline.clear()
 
             def pointA = new Vector3(lowerLeft.x, yLeft, lowerLeft.z)
             def pointB = new Vector3(lowerRigth.x, yRight, lowerRigth.z)
@@ -91,34 +91,35 @@ class SideNode extends BaseNode {
             }
             spline.isSuggestion = true
         }else {
-            Vector3 first = spline.points[0]
-            Vector3 last = spline.points[spline.points.size()-1]
+            def points = spline.points;
+            Vector3 first = points[0]
+            Vector3 last = points[points.size()-1]
             float length = 0.0
-            for (int i = 1; i< spline.points.size();++i) {
-                length += (spline.points[i-1]-spline.points[i]).lenght()
+            for (int i = 1; i< points.size();++i) {
+                length += (points[i-1]-points[i]).lenght()
             }
             float along = 0.0;
             Vector3 previous = first;
-            for (int i = 0; i <spline.points.size(); ++i) {
-                along += (previous-spline.points[i]).lenght();
-                previous = spline.points[i];
+            for (int i = 0; i <points.size(); ++i) {
+                along += (previous-points[i]).lenght();
+                previous = points[i];
                 float w = along/length;
                 float targetY = yLeft*(1.0-w) + yRight*w;
                 float lineY = first.y*(1.0-w)+last.y*w;
-                float diff = spline.points[i].y - lineY;
+                float diff = points[i].y - lineY;
                 float newY = targetY + diff;
-                spline.points[i] = Vector3(spline.points[i].x, newY, spline.points[i].z);
+                spline.setPoint(i, new Vector3(points[i].x, newY, points[i].z))
             }
         }
     }
 
     Vector3 interpolate(Vector3 pointA, Vector3 pointB, float t) {
-        return (pointA*t) + (pointB*(1.0-t));
+        return pointA*t + pointB*(1.0-t)
     }
 
     void ensureLeftToRigth() {
         if (!spline.isLeftToRight()) {
-            spline.points.reverse()
+            spline.reverse()
         }
     }
 
@@ -131,7 +132,35 @@ class SideNode extends BaseNode {
         node.right = this;
     }
     void makeSuggestionLines() {
+        ensureLeftToRigth();
+        List<Vector3> points = spline.points
+        Vector3 first = points[0];
+        Vector3 last = points[points.size()-1];
+        Vector3 left = new Vector3(lowerLeft.x,first.y,lowerLeft.z);
+        Vector3 right = new Vector3(lowerRigth.x,last.y,lowerRigth.z);
 
+        float rdist = (right-last).lenght();
+        float ldist = (left-first).lenght();
+        float dist = (left-right).lenght();
+        float totalPoints = 20.0;
+        if (ldist > 0.001) {
+            float lPoints = totalPoints*ldist/dist;
+            float lInc = ldist/lPoints;
+            for (float i = lInc; i< lPoints+lInc; i+=lInc) {
+                if (i > lPoints) i= lPoints;
+                spline.addPointFront(interpolate(left, first, (float)i/lPoints));
+                if (i == lPoints) break;
+            }
+        }
+        if (rdist > 0.001) {
+            float rPoints = totalPoints*rdist/dist;
+            float rInc = rdist/rPoints;
+            for (float i = rInc; i< rPoints+rInc; i+=rInc) {
+                if (i > rPoints) i= rPoints;
+                spline.addPoint(interpolate(right, last,(float)i/rPoints));
+                if (i == rPoints) break;
+            }
+        }
     }
 
 }

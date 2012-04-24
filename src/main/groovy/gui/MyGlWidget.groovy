@@ -52,6 +52,7 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
         addMouseWheelListener(this)
         addComponentListener(this)
         cursor = toolkit.createCustomCursor(new BufferedImage(3, 3, BufferedImage.TYPE_INT_ARGB), new Point(0, 0),"null")
+        pushScene()
     }
 
     void componentResized(ComponentEvent e) {
@@ -86,12 +87,12 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
         int button = e.button
         mouse[button] = false
 
-        if (!mouseMoved && e.button == MouseEvent.BUTTON3) {
+        if ((!mouseMoved) && button == MouseEvent.BUTTON3) {
             Vector3 dir = findMouseDirection(e)
             scene.selectActiveNode(scene.camera.position, dir)
         }
 
-        if (mouseMoved && e.button == MouseEvent.BUTTON1) {
+        if (mouseMoved && button == MouseEvent.BUTTON1) {
             scene.activeNode.determineActionOnStoppedDrawing()
             println "pushing scene to stack"
 
@@ -109,12 +110,23 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
     }
 
     void mouseMoved(MouseEvent e) {
+        if (isMousePressed(MouseEvent.BUTTON3)) {
+            int movex = e.x -previousMouseX;
+            int movey = e.y -previousMouseY;
+            scene.camera.goUp(movey/100.0);
+            scene.camera.goRight(-movex/100.0);
+        }
+
         Vector3 dir = findMouseDirection(e);
         scene.showCursor(scene.camera.position,dir);
         mouseMoved = true;
 
-        previousMouseX = e.x;
-        previousMouseY = e.y;
+        if (isMousePressed(MouseEvent.BUTTON1)) {
+            addPoint(e);
+        }
+
+        previousMouseX = e.x
+        previousMouseY = e.y
     }
 
     void mouseDragged(MouseEvent e) {
@@ -123,16 +135,18 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
             int movey = e.y -previousMouseY;
             scene.camera.goUp(movey/100.0);
             scene.camera.goRight(-movex/100.0);
-        }else if (isMousePressed(MouseEvent.BUTTON1)) {
-            addPoint(e);
         }
+
         Vector3 dir = findMouseDirection(e);
         scene.showCursor(scene.camera.position,dir);
-
         mouseMoved = true;
 
-        previousMouseX = e.x;
-        previousMouseY = e.y;
+        if (isMousePressed(MouseEvent.BUTTON1)) {
+            addPoint(e);
+        }
+
+        previousMouseX = e.x
+        previousMouseY = e.y
     }
 
     void mouseWheelMoved(MouseWheelEvent e) {
@@ -181,6 +195,7 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
 
     }
     void makeLayer() {
+        scene.makeLayer()
 
     }
     void newLayer() {
@@ -286,11 +301,17 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
  static main(args) {
      def count = 0
      new SwingBuilder().edt {
-         frame(title:'Frame', size:[300,300], show: true,defaultCloseOperation: WindowConstants.EXIT_ON_CLOSE) {
+         frame(title:'Frame', size:[800,600], show: true,defaultCloseOperation: WindowConstants.EXIT_ON_CLOSE) {
+             glwidget = new MyGlWidget()
+
              borderLayout()
-             label('ehih',constraints: BL.WEST)
-             widget(new MyGlWidget(), constraints: BL.CENTER)
-             box = comboBox(items: ["hei", "ho", "hallal"], constraints: BL.NORTH)
+
+             panel(constraints: BL.NORTH, alignmentX: LEFT_ALIGNMENT) {
+                makeLayer = button(text: 'Make Layer', actionPerformed: {glwidget.makeLayer()})
+                box = comboBox(items: ["hei", "ho", "hallal"])
+             }
+             widget(glwidget, constraints: BL.CENTER)
+
          }
      }
  }

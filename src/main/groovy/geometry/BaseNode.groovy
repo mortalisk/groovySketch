@@ -10,7 +10,7 @@ abstract class BaseNode {
     boolean active
     Shape shape
     Vector3 position = new Vector3(0,0,0)
-    List<BaseNode> children
+    List<BaseNode> children = []
     Spline spline = new Spline()
     Spline sketchingSpline = new Spline()
     boolean drawing

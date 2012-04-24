@@ -20,7 +20,7 @@ class RiverNode extends BaseNode implements ISurfaceFeature {
 
     }
 
-    void doTransformSurface(List<List<Vector3>> rows) {
+    void doTransformSurface(List<List<Vector3>> rows, float resolution, float size) {
 
     }
 
