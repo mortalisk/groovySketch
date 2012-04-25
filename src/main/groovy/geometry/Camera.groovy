@@ -132,7 +132,7 @@ class Camera {
         }
 
         if (trackMode == TrackMode.SPHERE_TRACK) {
-            Vector3 posAtSphere = new Vector3(Math.sin(trackAngleXZ)*Math.abs(Math.sin(trackAngleXY)), Math.cos(trackAngleXY), Math.cos(trackAngleXZ)*Math.abs(Math.sin(trackAngleXY)))
+            Vector3 posAtSphere = new Vector3((float)Math.sin(trackAngleXZ)*Math.abs(Math.sin(trackAngleXY)), (float)Math.cos(trackAngleXY), (float)Math.cos(trackAngleXZ)*Math.abs(Math.sin(trackAngleXY)))
             position = trackCenter + posAtSphere*trackDistance;
             forward = (trackCenter-position).normalize();
             up = new Vector3(0,1 , 0);

@@ -41,3 +41,7 @@ task unpackNatives(dependsOn: cleanOldNatives) << {
 run {
     jvmArgs += '-Djava.library.path=dist/bin'
 }
+
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}

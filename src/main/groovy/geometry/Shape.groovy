@@ -80,9 +80,9 @@ class Shape {
         int pointn = 0;
         for(int i=0; i<triangles.capacity(); i+=18) {
 
-            Vector3 v0= new Vector3(triangles.get(i),triangles.get(i+1),triangles.get(i+2))
-            Vector3 v1= new Vector3(triangles.get(i+6),triangles.get(i+7),triangles.get(i+8))
-            Vector3 v2= new Vector3(triangles.get(i+12),triangles.get(i+13),triangles.get(i+14))
+            Vector3 v0= new Vector3((float)triangles.get(i),(float)triangles.get(i+1),(float)triangles.get(i+2))
+            Vector3 v1= new Vector3((float)triangles.get(i+6),(float)triangles.get(i+7),(float)triangles.get(i+8))
+            Vector3 v2= new Vector3((float)triangles.get(i+12),(float)triangles.get(i+13),(float)triangles.get(i+14))
             // hentet fra http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#intersect_RayTriangle%28%29
 
 //            Vector3 v0(triangles[i].p1.x,triangles[i].p1.y,triangles[i].p1.z);

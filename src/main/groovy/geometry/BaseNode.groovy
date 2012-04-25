@@ -72,7 +72,7 @@ abstract class BaseNode {
         }
         if (found == null) {
             List<Vector3> points = intersectionPoints(from, direction);
-            if (points.size() > 0) {
+            if (points?.size() > 0) {
                 point = points[0];
                 return this;
             } else {

@@ -78,7 +78,7 @@ class SideNode extends BaseNode {
         return distLeft < distSpline || distRight < distSpline
     }
 
-    void addInterpolatedSuggestion(double yLeft, double yRight) {
+    void addInterpolatedSuggestion(float yLeft, float yRight) {
         ensureLeftToRigth()
         if(spline.isSuggestion) {
             spline.clear()
