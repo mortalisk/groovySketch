@@ -15,7 +15,7 @@ class SurfaceNode extends BaseNode
 
     enum Axis {X, Y, Z};
 
-    int resolution = 10;
+    int resolution = 50;
     int skip = 1;
 
     List<Vector2d> uvCoordinateSpline = new ArrayList<Vector2d>();

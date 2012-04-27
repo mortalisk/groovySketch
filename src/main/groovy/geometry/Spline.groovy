@@ -14,16 +14,18 @@ class Spline {
 
     }
     void addPoint(Vector3 point) {
-        points.add(point);
+        points.add(new Vector3(point));
         isSuggestion = false;
     }
 
 
     void addPointFront(Vector3 point) {
-        points.add(0,point);
+        points.add(0,new Vector3(point));
         isSuggestion = false;
     }
 
+    Vector3 tmp = new Vector3()
+    Vector3 tmp2 = new Vector3()
     Vector3 getPoint(double at) {
         if (at > 1.0) {
             at = 1.0;
@@ -33,18 +35,18 @@ class Spline {
 
         float length = 0.0;
         for (int i = 0; i < points.size()-1; i++) {
-            length += (points[i]-points[i+1]).lenght();
+            length += (tmp.set(points[i])-points[i+1]).lenght();
         }
         float pos = 0.0;
         float target = length*at;
         Vector3 r;
         for (int i = 0; i < points.size()-1; i++) {
-            pos += (points[i]-points[i+1]).lenght();
+            pos += (tmp.set(points[i])-points[i+1]).lenght();
             if(pos >= target) {
                 float overshoot = pos-target;
-                float lengthBetween = (points[i]-points[i+1]).lenght();
+                float lengthBetween = (tmp.set(points[i])-points[i+1]).lenght();
                 float a = overshoot/lengthBetween;
-                r = points[i+1]*(1-a) + (points[i]*(a));
+                r = tmp.set(points[i+1])*(1-a) + (tmp.set(points[i])*(a));
                 return r;
             }
         }
@@ -60,11 +62,11 @@ class Spline {
     }
 
     void changeLastPoint(Vector3 pos) {
-        points[points.size()-1] = pos;
+        points[points.size()-1] = new Vector3(pos);
     }
 
     void setPoint(int i, Vector3 value) {
-        points[i] = value
+        points[i] = new Vector3(value)
     }
 
     void reverse() {
@@ -72,18 +74,18 @@ class Spline {
     }
 
     void smooth() {
-        if (this.points.size()<1) return;
-        List<Vector3> newPoints = [];
-        for (float p = 0; p <1.001;p+=0.01) {
-            def points =new ArrayList<Vector3>( this.points)
-            for (int i = 1; i< points.size(); ++i) {
-                for (int j = 0;j <points.size()-i;++j) {
-                    points[j] = points[j]*(1-p) + points[j+1]*p;
-                }
-            }
-            newPoints.add(points[0]);
-        }
-        this.points = newPoints;
+//        if (this.points.size()<1) return;
+//        List<Vector3> newPoints = [];
+//        for (float p = 0; p <1.001;p+=0.01) {
+//            def points =new ArrayList<Vector3>( this.points)
+//            for (int i = 1; i< points.size(); ++i) {
+//                for (int j = 0;j <points.size()-i;++j) {
+//                    points[j]*(1-p) + tmp2.set(points[j+1])*p;
+//                }
+//            }
+//            newPoints.add(points[0]);
+//        }
+//        this.points = newPoints;
     }
 
     Vector3 lastPoint() {
@@ -130,7 +132,7 @@ class Spline {
         float distance = Float.MAX_VALUE
         for (int i = 0; i < points.size(); ++i) {
             Vector3 point = points[i];
-            float distanceThisFirst = (point - searchPoint).lenght();
+            float distanceThisFirst = (tmp.set(point) - searchPoint).lenght();
             if (distanceThisFirst < distance) {
                 nearest = i;
                 distance = distanceThisFirst;

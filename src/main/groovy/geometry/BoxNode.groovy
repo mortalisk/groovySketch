@@ -91,6 +91,7 @@ class BoxNode extends BaseNode {
     float topF, bottomF ,rightF ,leftF ,farF , nearF
     List<SideNode> surfaces = []
     SideNode activeSurface;
+    Vector3 tmp = new Vector3();
     void addPoint(Vector3 from, Vector3 direction) {
         // we must find the nearest intersection point
         float candidateDistance = Float.MAX_VALUE;
@@ -100,7 +101,7 @@ class BoxNode extends BaseNode {
         surfaces.each { s ->
             List<Vector3> points = s.intersectionPoints(from, direction);
             if (points.size() >0 ) {
-                float dist = (points[0]-from).lenght();
+                float dist = (tmp.set(points[0])-from).lenght();
                 if ((activeSurface == null || s == activeSurface) && dist < candidateDistance) {
                     candidateDistance = dist;
                     candidatePoint = points[0];
@@ -216,7 +217,7 @@ class BoxNode extends BaseNode {
             side.opposite.spline.clear();
 
             // project points from this side to opposite
-            Vector3 direction = side.opposite.lowerRigth - side.lowerLeft;
+            Vector3 direction = tmp.set(side.opposite.lowerRigth) - side.lowerLeft;
             side.opposite.projectPoints(direction, side.spline.getPoints());
 
             side.opposite.spline.isSuggestion = true;
@@ -242,7 +243,8 @@ class BoxNode extends BaseNode {
         List<Vector3> p = new ArrayList<Vector3>();
         float d = intersectionPoint(from, direction);
         if (d < Float.MAX_VALUE) {
-            p.add(from + (direction.normalize()*d));
+            Vector3 result = new Vector3(direction).normalize()*d + from
+            p.add(result);
         }
         return p;
     }

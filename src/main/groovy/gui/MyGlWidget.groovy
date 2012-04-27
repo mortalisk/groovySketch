@@ -153,18 +153,21 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
         scene.camera.goForward(e.wheelRotation);
     }
 
+    Vector3 tmp = new Vector3()
+    Vector3 tmp2 = new Vector3()
+    Vector3 tmp3 = new Vector3()
     Vector3 findMouseDirection(MouseEvent e) {
         // cursor move
         float a = scene.camera.fov/2.0f
         float h = this.height/2.0f
         float w = this.width/2.0f
         float l = h/Math.tan(a)
-        Vector3 forw = scene.camera.forward.normalize()*l
+        Vector3 forw = tmp.set(scene.camera.forward).normalize()*l
         float u = h - e.y
         float r = e.x - w
-        Vector3 up = scene.camera.up.normalize()*u
-        Vector3 right = forw.cross(scene.camera.up).normalize()*r
-        return scene.camera.position + forw + up + right
+        Vector3 up = tmp2.set(scene.camera.up).normalize()*u
+        Vector3 right = tmp3.set(forw).cross(scene.camera.up).normalize()*r
+        return ((forw + up) + right) + scene.camera.position
     }
 
     void checkInput() {

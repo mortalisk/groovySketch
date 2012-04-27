@@ -6,23 +6,27 @@ class SideNode extends BaseNode {
     SideNode opposite;
     SideNode left;
     SideNode right;
-    Vector3 lowerLeft;
-    Vector3 lowerRigth;
-    Vector3 upperRigth;
-    Vector3 upperLeft;
+    Vector3 lowerLeft = new Vector3();
+    Vector3 lowerRigth = new Vector3();
+    Vector3 upperRigth = new Vector3();
+    Vector3 upperLeft = new Vector3();
+
+    Vector3 tmp = new Vector3()
+    Vector3 tmp2 = new Vector3()
+
     SideNode(Vector3 lowerLeft,Vector3 lowerRigth, Vector3 upperRigth,Vector3 upperLeft) {
 
         super("sidenode")
-        this.lowerLeft = lowerLeft
-        this.lowerRigth = lowerRigth
-        this.upperRigth = upperRigth
-        this.upperLeft = upperLeft
+        this.lowerLeft.set(lowerLeft)
+        this.lowerRigth.set(lowerRigth)
+        this.upperRigth.set(upperRigth)
+        this.upperLeft.set(upperLeft)
 
         List<Vector3> vertices = [];
         List<Vector3> normals = [];
 
         List<Vector3> lineVertices = [];
-        Vector3 normal = (lowerRigth - lowerLeft).cross((upperRigth-lowerLeft)).normalize();
+        Vector3 normal = new Vector3((tmp.set(lowerRigth) - lowerLeft).cross((tmp2.set(upperRigth)-lowerLeft))).normalize()
         Vector4d c = new Vector4d(1.0, 1.0, 1.0, 0.5);
 
         //Front
@@ -51,10 +55,10 @@ class SideNode extends BaseNode {
     }
     SideNode(SideNode o) {
         super(o)
-        lowerLeft = o.lowerLeft
-        lowerRigth = o.lowerRigth
-        upperRigth = o.upperRigth
-        upperLeft = o.upperLeft
+        lowerLeft.set(o.lowerLeft)
+        lowerRigth.set(o.lowerRigth)
+        upperRigth.set(o.upperRigth)
+        upperLeft.set(o.upperLeft)
     }
 
     BaseNode copy() {
@@ -63,14 +67,15 @@ class SideNode extends BaseNode {
 
     void projectPoints(Vector3 diff,List<Vector3> points) {
         points.each{
-            spline.addPoint(it+diff)
+            spline.addPoint(tmp.set(it)+diff)
         }
     }
 
+    Vector3 tmp3 = new Vector3()
     boolean isPointNearerSide(Vector3 point, int indexInSpline) {
-        def  leftSide = new Vector3(lowerLeft.x, point.y, lowerLeft.z)
-        def  rightSide = new Vector3(lowerRigth.x, point.y, lowerRigth.z)
-        Vector3 inSpline = spline.points[indexInSpline]
+        Vector3  leftSide = tmp.set(lowerLeft.x, point.y, lowerLeft.z)
+        Vector3  rightSide = tmp2.set(lowerRigth.x, point.y, lowerRigth.z)
+        Vector3 inSpline = tmp3.set(spline.points[indexInSpline])
 
         float distLeft = (leftSide-point).lenght()
         float distRight = (rightSide-point).lenght()
@@ -83,8 +88,8 @@ class SideNode extends BaseNode {
         if(spline.isSuggestion) {
             spline.clear()
 
-            def pointA = new Vector3(lowerLeft.x, yLeft, lowerLeft.z)
-            def pointB = new Vector3(lowerRigth.x, yRight, lowerRigth.z)
+            def pointA = tmp.set(lowerLeft.x, yLeft, lowerLeft.z)
+            def pointB = tmp2.set(lowerRigth.x, yRight, lowerRigth.z)
             for (float i = 0.0; i<1.01; i+=0.05) {
                 Vector3 add = interpolate(pointA, pointB, i)
                 spline.addPoint(add)
@@ -96,12 +101,12 @@ class SideNode extends BaseNode {
             Vector3 last = points[points.size()-1]
             float length = 0.0
             for (int i = 1; i< points.size();++i) {
-                length += (points[i-1]-points[i]).lenght()
+                length += (tmp.set(points[i-1])-points[i]).lenght()
             }
             float along = 0.0;
             Vector3 previous = first;
             for (int i = 0; i <points.size(); ++i) {
-                along += (previous-points[i]).lenght();
+                along += (tmp.set(previous)-points[i]).lenght();
                 previous = points[i];
                 float w = along/length;
                 float targetY = yLeft*(1.0-w) + yRight*w;
@@ -113,8 +118,9 @@ class SideNode extends BaseNode {
         }
     }
 
+    /** changes args returns result in same object */
     Vector3 interpolate(Vector3 pointA, Vector3 pointB, float t) {
-        return pointA*t + pointB*(1.0-t)
+        return (pointA*t) + (pointB*(1.0-t))
     }
 
     void ensureLeftToRigth() {
@@ -139,16 +145,16 @@ class SideNode extends BaseNode {
         Vector3 left = new Vector3(lowerLeft.x,first.y,lowerLeft.z);
         Vector3 right = new Vector3(lowerRigth.x,last.y,lowerRigth.z);
 
-        float rdist = (right-last).lenght();
-        float ldist = (left-first).lenght();
-        float dist = (left-right).lenght();
+        float rdist = (tmp.set(right)-last).lenght();
+        float ldist = (tmp.set(left)-first).lenght();
+        float dist = (tmp.set(left)-right).lenght();
         float totalPoints = 20.0;
         if (ldist > 0.001) {
             float lPoints = totalPoints*ldist/dist;
             float lInc = ldist/lPoints;
             for (float i = lInc; i< lPoints+lInc; i+=lInc) {
                 if (i > lPoints) i= lPoints;
-                spline.addPointFront(interpolate(left, first, (float)i/lPoints));
+                spline.addPointFront(interpolate(tmp.set(left), tmp2.set(first), (float)i/lPoints));
                 if (i == lPoints) break;
             }
         }
@@ -157,7 +163,7 @@ class SideNode extends BaseNode {
             float rInc = rdist/rPoints;
             for (float i = rInc; i< rPoints+rInc; i+=rInc) {
                 if (i > rPoints) i= rPoints;
-                spline.addPoint(interpolate(right, last,(float)i/rPoints));
+                spline.addPoint(interpolate(tmp.set(right), tmp2.set(last),(float)i/rPoints));
                 if (i == rPoints) break;
             }
         }

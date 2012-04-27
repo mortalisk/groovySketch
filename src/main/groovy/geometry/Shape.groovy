@@ -72,6 +72,16 @@ class Shape {
         glDisableClientState(GL_NORMAL_ARRAY);
         glDisableClientState(GL_VERTEX_ARRAY);
     }
+
+    Vector3 v0 = new Vector3()
+    Vector3 v1 = new Vector3()
+    Vector3 v2 = new Vector3()
+    Vector3 u = new Vector3()
+    Vector3 v = new Vector3()
+    Vector3 n = new Vector3()             // triangle vectors
+    Vector3 w0 = new Vector3()
+    Vector3 w = new Vector3()
+    Vector3 I = new Vector3()
     List<Vector3> intersectionPoints(Vector3 p,Vector3 dir) {
         ArrayList<Vector3> points = new ArrayList<Vector3>();
 
@@ -80,28 +90,26 @@ class Shape {
         int pointn = 0;
         for(int i=0; i<triangles.capacity(); i+=18) {
 
-            Vector3 v0= new Vector3((float)triangles.get(i),(float)triangles.get(i+1),(float)triangles.get(i+2))
-            Vector3 v1= new Vector3((float)triangles.get(i+6),(float)triangles.get(i+7),(float)triangles.get(i+8))
-            Vector3 v2= new Vector3((float)triangles.get(i+12),(float)triangles.get(i+13),(float)triangles.get(i+14))
+            v0.set((float)triangles.get(i),(float)triangles.get(i+1),(float)triangles.get(i+2))
+            v1.set((float)triangles.get(i+6),(float)triangles.get(i+7),(float)triangles.get(i+8))
+            v2.set((float)triangles.get(i+12),(float)triangles.get(i+13),(float)triangles.get(i+14))
             // hentet fra http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#intersect_RayTriangle%28%29
 
 //            Vector3 v0(triangles[i].p1.x,triangles[i].p1.y,triangles[i].p1.z);
 //            Vector3 v1(triangles[i].p2.x,triangles[i].p2.y,triangles[i].p2.z);
 //            Vector3 v2(triangles[i].p3.x,triangles[i].p3.y,triangles[i].p3.z);
 
-            Vector3    u, v, n;             // triangle vectors
-            Vector3    w0, w;          // ray vectors
             float      r, a, b;             // params to calc ray-plane intersect
 
             // get triangle edge vectors and plane normal
-            u = v1 - v0;
-            v = v2 - v0;
-            n = u.cross(v);             // cross product
+            u.set(v1) - v0;
+            v.set(v2) - v0;
+            n.set(u).cross(v);             // cross product
             if (n.x == 0 && n.y== 0 && n.z == 0)            // triangle is degenerate
                 continue;  // return -1               // do not deal with this case
 
             //dir = R.P1 - R.P0;             // ray direction vector
-            w0 = p - v0;
+            w0.set(p) - v0;
             a = -(n * w0);
             b = n * dir;
             if (Math.abs(b) < 0.01) {     // ray is parallel to triangle plane
@@ -117,14 +125,14 @@ else return 0;             // ray disjoint from plane*/
                 continue; //return 0;                  // => no intersect
             // for a segment, also test if (r > 1.0) => no intersect
 
-            Vector3 I = p + dir*r;           // intersect point of ray and plane
+            I.set(dir)*r +p
 
             // is I inside T?
             float    uu, uv, vv, wu, wv, D;
             uu = u*u;
             uv = u*v;
             vv = v*v;
-            w = I - v0;
+            w.set(I) - v0;
             wu = w*u;
             wv = w*v;
             D = uv * uv - uu * vv;
@@ -139,7 +147,7 @@ else return 0;             // ray disjoint from plane*/
                 continue; //return 0;
 
             //return 1;                      // I is in T
-            points.add(I);
+            points.add(new Vector3(I));
             if (r < distance) {
                 nearest = pointn;
                 distance = r;

@@ -55,11 +55,10 @@ class Scene {
                 y = Math.round( y / resolution)*resolution;
                 z = Math.round( z / resolution)*resolution;
             }
-            cursor.position = new Vector3(x,y,z);
+            cursor.position.set(x,y,z);
             onSurface = true;
         } else {
-            Vector3 pos = camera.position + direction.normalize()*5;
-            cursor.position = pos;
+            cursor.position.set(direction).normalize()*5+ camera.position
             onSurface = false;
         }
     }
@@ -70,11 +69,11 @@ class Scene {
         }
     }
 
+    Vector3 tmp = new Vector3()
     void selectActiveNode(Vector3 from, Vector3 direction) {
 
-        Vector3 point;
         activeNode.setActive(false);
-        activeNode = boxNode.findIntersectingNode(from, direction, point);
+        activeNode = boxNode.findIntersectingNode(from, direction);
         if (activeNode == null)
             activeNode = boxNode;
         activeNode.setActive(true);

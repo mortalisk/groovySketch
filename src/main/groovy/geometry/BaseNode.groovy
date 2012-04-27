@@ -31,7 +31,7 @@ abstract class BaseNode {
         this.name = name
     }
     BaseNode(BaseNode other) {
-        position = other.position
+        position.set(other.position)
         visible = other.visible
         diffuse = other.diffuse
         ambient = other.ambient
@@ -58,13 +58,13 @@ abstract class BaseNode {
         active = a;
     }
 
-    BaseNode findIntersectingNode(Vector3 from, Vector3 direction, Vector3 point) {
+    Vector3 tmp = new Vector3()
+    BaseNode findIntersectingNode(Vector3 from, Vector3 direction) {
         BaseNode found = null;
         float distance = Float.MAX_VALUE;
         children.each { child ->
-            Vector3 p;
-            BaseNode foundLast = child.findIntersectingNode(from, direction,p);
-            float distLast = (p - from).lenght();
+            BaseNode foundLast = child.findIntersectingNode(from, direction,tmp);
+            float distLast = (tmp - from).lenght();
             if (foundLast && distLast < distance) {
                 found = foundLast;
                 distance = distLast;
@@ -73,7 +73,6 @@ abstract class BaseNode {
         if (found == null) {
             List<Vector3> points = intersectionPoints(from, direction);
             if (points?.size() > 0) {
-                point = points[0];
                 return this;
             } else {
                 return null;
@@ -83,11 +82,13 @@ abstract class BaseNode {
         }
     }
 
+    Vector3 fromNew = new Vector3()
+    Vector3 directionNew = new Vector3()
     List<Vector3> intersectionPoints(Vector3 from,Vector3 direction) {
-        from = from - position;
-        direction = direction - position;
+        fromNew.set(from) - position;
+        directionNew.set(direction) - position;
         if (shape) {
-            return shape.intersectionPoints(from, direction);
+            return shape.intersectionPoints(fromNew, direction);
         } else {
             return new ArrayList<Vector3>();
         }
@@ -121,6 +122,7 @@ abstract class BaseNode {
 
     }
 
+    Vector4d red = new Vector4d(1.0,0.0,0.0,1.0);
     void drawSelf() {
 
         glTranslated(position.x, position.y, position.z);
@@ -130,7 +132,7 @@ abstract class BaseNode {
             if (visible) {
                 Vector4d color = diffuse;
                 if (active) {
-                    color = new Vector4d(1.0,0.0,0.0,1.0);
+                    color = red;
                 }
                 shape.drawShape(ambient, color);
             }
