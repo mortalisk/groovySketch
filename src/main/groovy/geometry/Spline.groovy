@@ -46,7 +46,7 @@ class Spline {
                 float overshoot = pos-target;
                 float lengthBetween = (tmp.set(points[i])-points[i+1]).lenght();
                 float a = overshoot/lengthBetween;
-                r = tmp.set(points[i+1])*(1-a) + (tmp.set(points[i])*(a));
+                r = tmp.set(points[i+1])*(1-a) + (tmp2.set(points[i])*(a));
                 return r;
             }
         }

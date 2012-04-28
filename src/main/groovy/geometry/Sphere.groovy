@@ -29,8 +29,8 @@ class Sphere extends Shape
             }
         }
 
-        this.triangles = BufferUtils.createDoubleBuffer((antallDisker*antallStykker*2)*6*3);
-        this.lineVertices = BufferUtils.createDoubleBuffer(0);
+        this.triangles = BufferUtils.createFloatBuffer((antallDisker*antallStykker*2)*6*3);
+        this.lineVertices = BufferUtils.createFloatBuffer(0);
         // overste
         for(int s = 0; s<antallStykker; s++) {
             Vector3 v1, v2, v3, n1, n2, n3

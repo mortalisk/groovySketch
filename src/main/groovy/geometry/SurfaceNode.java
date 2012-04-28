@@ -15,11 +15,12 @@ class SurfaceNode extends BaseNode
 
     enum Axis {X, Y, Z};
 
-    int resolution = 50;
+    int resolution = 200;
     int skip = 1;
 
     List<Vector2d> uvCoordinateSpline = new ArrayList<Vector2d>();
-    List < List < Vector3 > > rows = new ArrayList<List<Vector3>>();
+    List < List < Vector3 > > rows = new ArrayList<List<Vector3>>(resolution);
+    List < List < Vector3 > > normalRows = new ArrayList<List<Vector3>>(resolution);
     float[][] intersectRows = new float [resolution][resolution*3];
 
 
@@ -39,6 +40,20 @@ class SurfaceNode extends BaseNode
         this.left = other.left.copy();
         this.below = (below != null)?below.copy():null;
 
+    }
+
+    void makeRows() {
+        if (rows.size() != 0) return;
+        for(int i = 0; i<resolution; i++) {
+            ArrayList<Vector3> row = new ArrayList<Vector3>(resolution);
+            ArrayList<Vector3> normalrow = new ArrayList<Vector3>(resolution);
+            for(int j = 0; j<resolution; j++) {
+                row.add(new Vector3());
+                normalrow.add(new Vector3());
+            }
+            rows.add(row);
+            normalRows.add(normalrow);
+        }
     }
 
     void invalidate() {
@@ -211,15 +226,13 @@ class SurfaceNode extends BaseNode
 
         List<Vector3> front1 = new ArrayList<Vector3>();
         List<Vector3> front2 = new ArrayList<Vector3>();
-        for(float i = 0.0f; i < 1.0; i+= 0.02) {
+        for(int i = 0; i < belowSpline.length(); i++) {
             Vector3 a = belowSpline.getPoint(i);
-            Vector3 b = belowSpline.getPoint(i+0.02);
 
             Vector3 c = spline.getPoint(i);
-            Vector3 d = spline.getPoint(i+0.02);
 
-            front1.add(a);
-            front2.add(c);
+            front1.add(new Vector3(a));
+            front2.add(new Vector3(c));
 
         }
         for (int i = front2.size()-1; i>= 0; --i) {
@@ -240,7 +253,7 @@ class SurfaceNode extends BaseNode
             Vector3 a = front2.get(i);
             Vector3 b = front2.get(i+1);
             Vector3 c = front2.get(i+2);
-            Vector3 normal = (b.minus(a)).cross(c.minus(a)).normalize();
+            Vector3 normal = new Vector3(tmp.set(b).minus(a).cross(tmp2.set(c).minus(a)).normalize());
 
             normals.add(normal);
             normals.add(normal);
@@ -252,105 +265,136 @@ class SurfaceNode extends BaseNode
 
     }
 
+
+    Vector3 a = new Vector3(0,0,0);
+    Vector3 b = new Vector3(0,0,0);
+    Vector3 c = new Vector3(0,0,0);
+    Vector3 d = new Vector3(0,0,0);
+    Vector3 tmp = new Vector3(0,0,0);
+    Vector3 tmp2 = new Vector3(0,0,0);
+    Vector3 tmp3 = new Vector3(0,0,0);
+    Vector3 tmp4 = new Vector3(0,0,0);
+    Vector3 frontRight = new Vector3(0,0,0);
+    Vector3 frontLeft  = new Vector3(0,0,0);
+    Vector3 backLeft = new Vector3(0,0,0);
+    Vector3 backRight = new Vector3(0,0,0);
+    Vector3 leftp = new Vector3(0,0,0);
+    Vector3 rightp = new Vector3(0,0,0);
+    Vector3 frontp = new Vector3(0,0,0);
+    Vector3 backp = new Vector3(0,0,0);
     void constructLayer() {
+
         if (hasContructedLayer) return;
 
-        List<Vector3> triangles = new ArrayList<Vector3>();
-        List<Vector3> previousRow = new ArrayList<Vector3>() ;
+        long t0 = System.currentTimeMillis();
+
+        makeRows();
+
+        long t1 = System.currentTimeMillis();
+
+        System.out.println("makeRows used " + (t1-t0) + "millis");
 
 
-        Vector3 frontRight = right.getPoint(0.0);
-        Vector3 frontLeft = left.getPoint(1.0);
-        Vector3 backLeft = left.getPoint(0.0);
-        Vector3 backRight = right.getPoint(1.0);
 
-        rows.clear();
+        frontRight.set(right.getPoint(0.0));
+        frontLeft.set(left.getPoint(1.0));
+        backLeft.set(left.getPoint(0.0));
+        backRight.set(right.getPoint(1.0));
+
+        //rows.clear();
 
         float resolution = (float)this.resolution;
 
-        for (int zi = 0;zi<resolution;++zi) {
-            List<Vector3> row = new ArrayList<Vector3>();
+        for (int zi = 0;zi<this.resolution;++zi) {
+            List<Vector3> row = rows.get(zi);
             float zif = zi/resolution;
-            Vector3 rowLeft = frontLeft.multiply(1.0-zif).plus(backLeft.multiply(zif));
-            Vector3 rowRigth = frontRight.multiply(1.0-zif).plus(backRight.multiply(zif));
+            Vector3 rowLeft = a.set(frontLeft).multiply(1.0 - zif).plus(tmp.set(backLeft).multiply(zif));
+            Vector3 rowRigth = b.set(frontRight).multiply(1.0 - zif).plus(tmp.set(backRight).multiply(zif));
 
-            Vector3 leftp = left.getPoint(1.0-zif);
-            Vector3 rightp = right.getPoint(zif);
-            for (int xi = 0;xi<resolution;xi++) {
+            leftp .set( left.getPoint(1.0-zif));
+            rightp .set( right.getPoint(zif));
+            for (int xi = 0;xi<this.resolution;xi++) {
                 float xif = xi/resolution;
-                Vector3 colInt = rowLeft.multiply(1.0-xif).plus(rowRigth.multiply(xif));
-                Vector3 frontp = front.getPoint(xif);
-                Vector3 backp = back.getPoint(1.0-xif);
-                Vector3 frontBack = frontp.multiply(1.0-zif).plus(backp.multiply(zif));
+                Vector3 colInt = c.set(rowLeft).multiply(1.0 - xif).plus(tmp.set(rowRigth).multiply(xif));
+                frontp .set( front.getPoint(xif));
+                backp .set( back.getPoint(1.0-xif));
+                Vector3 frontBack = d.set(frontp).multiply(1.0-zif).plus(tmp.set(backp).multiply(zif));
                 Vector3 diff = frontBack.minus(colInt);
 
-                Vector3 leftRight = leftp.multiply(1.0-xif).plus(rightp.multiply(xif));
+                Vector3 leftRight = tmp3.set(leftp).multiply(1.0-xif).plus(tmp.set(rightp).multiply(xif));
                 Vector3 point = leftRight.plus(diff);
-                row.add(point);
+                row.get(xi).set(point);
             }
-            rows.add(row);
         }
+        long t2 = System.currentTimeMillis();
+
+        System.out.println( "rows used" + (t2-t1) +  "millis");
 
         for ( BaseNode child : getChildren()) {
             if (child instanceof ISurfaceFeature) {
-                ISurfaceFeature feature = (ISurfaceFeature)(child);
-                feature.doTransformSurface(rows, resolution, 10);
-                feature.repositionOnSurface(this);
+//                ISurfaceFeature feature = (ISurfaceFeature)(child);
+//                feature.doTransformSurface(rows, resolution, 10);
+//                feature.repositionOnSurface(this);
             }
         }
 
         for (int z = 0; z<this.resolution; z++) {
-            float[] row = new float[this.resolution*3];
+            float[] row = intersectRows[z];
             for (int x = 0; x < this.resolution; x++) {
                 Vector3 p = rows.get(z).get(x);
                 row[x*3] = p.getX();
                 row[x*3+1] = p.getY();
                 row[x*3+2] = p.getZ();
             }
-            intersectRows[z] =row;
+
         }
+
+        long t3 = System.currentTimeMillis();
+
+        System.out.println( "intersect" + (t3-t2) +  "millis");
 
         //compute normals
-        List < List < Vector3 > > normalRows = new ArrayList<List<Vector3>>();
-        for (int i = 0; i< rows.size(); ++i) {
-            List<Vector3> row = new ArrayList<Vector3>();
-            for (int j = 0; j < rows.get(i).size(); ++j) {
-                Vector3 a; // = new Vector3(0,0,0)
-                Vector3 b; //= new Vector3(0,0,0)
-                Vector3 c; //= new Vector3(0,0,0)
-                Vector3 d; //= new Vector3(0,0,0)
-                if (i == 0) {
-                    a = rows.get(i+1).get(j).minus(rows.get(i).get(j));
-                    a = a.negative();
-                }else {
-                    a = rows.get(i-1).get(j) .minus( rows.get(i).get(j));
-                }
-                if (i == rows.size()-1) {
-                    b = rows.get(i-1).get(j) .minus( rows.get(i).get(j));
-                    b = b.negative();
-                }else {
-                    b = rows.get(i+1).get(j) .minus( rows.get(i).get(j));
-                }
-                if (j == 0) {
-                    c = rows.get(i).get(j+1) .minus( rows.get(i).get(j));
-                    c = c.negative();
-                }else {
-                    c = rows.get(i).get(j-1) .minus( rows.get(i).get(j));
-                }
-                if (j == rows.get(i).size()-1) {
-                    d = rows.get(i).get(j-1) .minus( rows.get(i).get(j));
-                    d = d.negative();
-                }else {
-                    d = rows.get(i).get(j+1) .minus( rows.get(i).get(j));
-                }
-                Vector3 n = (a.cross(d) .plus(d.cross(b)).plus(b.cross(c)).plus(c.cross(a)).normalize());
-                row.add( n);
-            }
-            normalRows.add(row);
-        }
+        //List < List < Vector3 > > normalRows = new ArrayList<List<Vector3>>();
+//        for (int i = 0; i< rows.size(); ++i) {
+//            List<Vector3> row = normalRows.get(i);
+//            for (int j = 0; j < rows.get(i).size(); ++j) {
+//                Vector3 current = rows.get(i).get(j);
+//                if (i == 0) {
+//                    a.set(rows.get(i+1).get(j)).minus(current);
+//                    a.negative();
+//                }else {
+//                    a.set(rows.get(i-1).get(j)) .minus(current);
+//                }
+//                if (i == rows.size()-1) {
+//                    b.set(rows.get(i-1).get(j)) .minus(current);
+//                    b.negative();
+//                }else {
+//                    b.set(rows.get(i+1).get(j)) .minus(current);
+//                }
+//                if (j == 0) {
+//                    c .set(rows.get(i).get(j+1)) .minus(current);
+//                    c.negative();
+//                }else {
+//                    c.set(rows.get(i).get(j-1)) .minus(current);
+//                }
+//                if (j == rows.get(i).size()-1) {
+//                    d.set(rows.get(i).get(j-1)) .minus(current);
+//                    d.negative();
+//                }else {
+//                    d.set(rows.get(i).get(j+1)) .minus(current);
+//                }
+//                Vector3 n = (tmp.set(a).cross(d) .plus(tmp2.set(d).cross(b)).plus(tmp3.set(b).cross(c)).plus(tmp4.set(c).cross(a)).normalize());
+//                row.get(j).set(n);
+//            }
+//            normalRows.add(row);
+//        }
 
-        List<Vector3> normals = new ArrayList<Vector3>();
+        //float[] normals = new float[this.resolution*this.resolution*6*3];
+        float[] triangles = new float[this.resolution*this.resolution*12*3];
         //create triangles
+        int normalsIndex = 0;
+        int trianglesIndex = 0;
+        Vector3 normal = new Vector3(0,1,0);
         int tris = 0;
         for (int i = 1; i< rows.size(); ++i) {
             for (int j = 1; j < rows.get(i).size(); ++j) {
@@ -362,48 +406,91 @@ class SurfaceNode extends BaseNode
                 Vector3 nc = normalRows.get(i).get(j - 1);
                 Vector3 d = rows.get(i).get(j);
                 Vector3 nd = normalRows.get(i).get(j);
-                triangles.add(a);
-                triangles.add(b);
-                triangles.add(c);
-                triangles.add(b);
-                triangles.add(d);
-                triangles.add(c);
-                normals.add(na);
-                normals.add(nb);
-                normals.add(nc);
-                normals.add(nb);
-                normals.add(nd);
-                normals.add(nc);
+                triangles[trianglesIndex++]=a.x;
+                triangles[trianglesIndex++]=a.y;
+                triangles[trianglesIndex++]=a.z;
+                triangles[trianglesIndex++] =normal.x;
+                triangles[trianglesIndex++] =normal.y;
+                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++]=b.x;
+                triangles[trianglesIndex++]=b.y;
+                triangles[trianglesIndex++]=b.z;
+                triangles[trianglesIndex++] =normal.x;
+                triangles[trianglesIndex++] =normal.y;
+                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++]=c.x;
+                triangles[trianglesIndex++]=c.y;
+                triangles[trianglesIndex++]=c.z;
+                triangles[trianglesIndex++] =normal.x;
+                triangles[trianglesIndex++] =normal.y;
+                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++]=b.x;
+                triangles[trianglesIndex++]=b.y;
+                triangles[trianglesIndex++]=b.z;
+                triangles[trianglesIndex++] =normal.x;
+                triangles[trianglesIndex++] =normal.y;
+                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++]=d.x;
+                triangles[trianglesIndex++]=d.y;
+                triangles[trianglesIndex++]=d.z;
+                triangles[trianglesIndex++] =normal.x;
+                triangles[trianglesIndex++] =normal.y;
+                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++]=c.x;
+                triangles[trianglesIndex++]=c.y;
+                triangles[trianglesIndex++]=c.z;
+                triangles[trianglesIndex++] =normal.x;
+                triangles[trianglesIndex++] =normal.y;
+                triangles[trianglesIndex++] =normal.z;
+//                normals.add(na);
+//                normals.add(nb);
+//                normals.add(nc);
+//                normals.add(nb);
+//                normals.add(nd);
+//                normals.add(nc);
                 tris += 2;
             }
         }
+
+        long t4 = System.currentTimeMillis();
+
+        System.out.println( " trangles used" + (t4-t3) +  "millis");
         System.out.println("created " + tris + "triangles");
 
         List<Vector3> outline = new ArrayList<Vector3>();
 
         for (double i = 0.0;i<=1.01;i+=0.02) {
-            outline.add(front.getPoint(i));
+            outline.add(new Vector3(front.getPoint(i)));
         }
         for (double i = 0.0;i<=1.01;i+=0.02) {
-            outline.add(right.getPoint(i));
+            outline.add(new Vector3(right.getPoint(i)));
         }
         for (double i = 0.0;i<=1.01;i+=0.02) {
-            outline.add(back.getPoint(i));
+            outline.add(new Vector3(back.getPoint(i)));
         }
         for (double i = 0.0;i<=1.01;i+=0.02) {
-            outline.add(left.getPoint(i));
+            outline.add(new Vector3(left.getPoint(i)));
         }
 
         if (below != null) {
-            makeSide(below.front, front, normals, triangles);
-            makeSide(below.left, left, normals, triangles);
-            makeSide(below.back, back, normals, triangles);
-            makeSide(below.right, right, normals, triangles);
+//            makeSide(below.front, front, normals, triangles);
+//            makeSide(below.left, left, normals, triangles);
+//            makeSide(below.back, back, normals, triangles);
+//            makeSide(below.right, right, normals, triangles);
         }
 
 
+        long t5 = System.currentTimeMillis();
+
+        System.out.println( " outline used" + (t5-t4) +  "millis");
+
         hasContructedLayer = true;
-        setShape(new Surface(triangles, normals, outline));
+
+        setShape(new Surface(triangles, outline));
+
+        long t6 = System.currentTimeMillis();
+
+        System.out.println( "surface used" + (t6-t1) +  "millis");
     }
 
     public SurfaceNode copy() {
@@ -607,10 +694,10 @@ class SurfaceNode extends BaseNode
 
             }
         }
-        float nearestDist = 10000000;
+        float nearestDist = Float.MAX_VALUE;
         int nearest = -1;
         for (int i = 0; i< cand.size(); ++i) {
-            float dist = (cand.get(i).minus(from).lenght());
+            float dist = tmp.set(cand.get(i)).minus(from).lenght();
             if (dist < nearestDist) {
                 nearest = i;
                 nearestDist = dist;

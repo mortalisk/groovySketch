@@ -83,15 +83,17 @@ class SideNode extends BaseNode {
         return distLeft < distSpline || distRight < distSpline
     }
 
+    def pointA = new Vector3()
+    def pointB = new Vector3()
     void addInterpolatedSuggestion(float yLeft, float yRight) {
         ensureLeftToRigth()
         if(spline.isSuggestion) {
             spline.clear()
 
-            def pointA = tmp.set(lowerLeft.x, yLeft, lowerLeft.z)
-            def pointB = tmp2.set(lowerRigth.x, yRight, lowerRigth.z)
+            pointA.set(lowerLeft.x, yLeft, lowerLeft.z)
+            pointB.set(lowerRigth.x, yRight, lowerRigth.z)
             for (float i = 0.0; i<1.01; i+=0.05) {
-                Vector3 add = interpolate(pointA, pointB, i)
+                Vector3 add = interpolate(tmp.set(pointA), tmp2.set(pointB), i)
                 spline.addPoint(add)
             }
             spline.isSuggestion = true

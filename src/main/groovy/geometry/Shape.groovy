@@ -9,8 +9,8 @@ import org.lwjgl.BufferUtils
 class Shape {
 
     int displayList
-    DoubleBuffer triangles
-    DoubleBuffer lineVertices
+    FloatBuffer triangles
+    FloatBuffer lineVertices
     boolean strip
 
     Shape() {
@@ -63,9 +63,9 @@ class Shape {
         triangles.rewind()
         if (triangles.capacity() > 0) {
             int mode = strip?GL_TRIANGLE_STRIP:GL_TRIANGLES
-            glVertexPointer(3,6*8,triangles);
+            glVertexPointer(3,6*4,triangles);
             triangles.position(3)
-            glNormalPointer(6*8,triangles);
+            glNormalPointer(6*4,triangles);
             int number = (int)(triangles.capacity()/6)
             glDrawArrays(mode,0,number);
         }

@@ -302,6 +302,7 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
     }
 
  static main(args) {
+     System.loadLibrary("jawt");
      def count = 0
      new SwingBuilder().edt {
          frame(title:'Frame', size:[800,600], show: true,defaultCloseOperation: WindowConstants.EXIT_ON_CLOSE) {
