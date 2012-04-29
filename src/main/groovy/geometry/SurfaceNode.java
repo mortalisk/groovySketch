@@ -15,7 +15,7 @@ class SurfaceNode extends BaseNode
 
     enum Axis {X, Y, Z};
 
-    int resolution = 200;
+    int resolution = 400;
     int skip = 1;
 
     List<Vector2d> uvCoordinateSpline = new ArrayList<Vector2d>();
@@ -194,8 +194,9 @@ class SurfaceNode extends BaseNode
                 /* remove v from remaining polygon */
                 s=v;
                 t=v+1;
-                while(t<nv) {V[s] = V[t]; nv--;s++;t++;}
+                while(t<nv) {V[s] = V[t]; s++;t++;}
 
+                nv--;
                 /* resest error detection counter */
                 count = 2*nv;
             }
@@ -222,46 +223,57 @@ class SurfaceNode extends BaseNode
 
     }
 
-    void makeSide(Spline belowSpline, Spline spline,List<Vector3> normals, List<Vector3> triangles) {
+    int makeSide(Spline belowSpline, Spline spline, float[] triangles, int trianglesIndex) {
 
         List<Vector3> front1 = new ArrayList<Vector3>();
-        List<Vector3> front2 = new ArrayList<Vector3>();
-        for(int i = 0; i < belowSpline.length(); i++) {
-            Vector3 a = belowSpline.getPoint(i);
+        List<Vector3> result = new ArrayList<Vector3>();
+        for(int i = 0; i < spline.length(); i++) {
+            Vector3 a = spline.getPoints().get(i);
 
-            Vector3 c = spline.getPoint(i);
-
-            front1.add(new Vector3(a));
-            front2.add(new Vector3(c));
+            front1.add(a);
 
         }
-        for (int i = front2.size()-1; i>= 0; --i) {
-            front1.add(front2.get(i));
+        for (int i = belowSpline.length()-1; i>= 0; --i) {
+            front1.add(belowSpline.getPoints().get(i));
         }
 
-        front2.clear();
         Axis axis = Axis.X;
         boolean similarZ = similar(front1.get(0).getZ(),front1.get(front1.size()-1).getZ(),front1.get(2).getZ());
         if (similarZ) {
             axis = Axis.Z;
         }
 
-        triangulate(front1,front2, axis);
+        triangulate(front1,result, axis);
+
+        System.out.println("side had " + front1.size() + ", " + result.size());
+
+        for (int i = 0; i < result.size(); i+=3) {
+            Vector3 a = result.get(i);
+            Vector3 b = result.get(i+1);
+            Vector3 c = result.get(i+2);
+            Vector3 normal = tmp.set(b).minus(a).cross(tmp2.set(c).minus(a)).normalize();
 
 
-        for (int i = 0; i < front2.size(); i+=3) {
-            Vector3 a = front2.get(i);
-            Vector3 b = front2.get(i+1);
-            Vector3 c = front2.get(i+2);
-            Vector3 normal = new Vector3(tmp.set(b).minus(a).cross(tmp2.set(c).minus(a)).normalize());
-
-            normals.add(normal);
-            normals.add(normal);
-            normals.add(normal);
-            triangles.add(a);
-            triangles.add(b);
-            triangles.add(c);
+            triangles[trianglesIndex++] = a.x;
+            triangles[trianglesIndex++] = a.y;
+            triangles[trianglesIndex++] = a.z;
+            triangles[trianglesIndex++] = normal.x;
+            triangles[trianglesIndex++] = normal.y;
+            triangles[trianglesIndex++] = normal.z;
+            triangles[trianglesIndex++] = b.x;
+            triangles[trianglesIndex++] = b.y;
+            triangles[trianglesIndex++] = b.z;
+            triangles[trianglesIndex++] = normal.x;
+            triangles[trianglesIndex++] = normal.y;
+            triangles[trianglesIndex++] = normal.z;
+            triangles[trianglesIndex++] = c.x;
+            triangles[trianglesIndex++] = c.y;
+            triangles[trianglesIndex++] = c.z;
+            triangles[trianglesIndex++] = normal.x;
+            triangles[trianglesIndex++] = normal.y;
+            triangles[trianglesIndex++] = normal.z;
         }
+        return trianglesIndex;
 
     }
 
@@ -355,42 +367,43 @@ class SurfaceNode extends BaseNode
 
         //compute normals
         //List < List < Vector3 > > normalRows = new ArrayList<List<Vector3>>();
-//        for (int i = 0; i< rows.size(); ++i) {
-//            List<Vector3> row = normalRows.get(i);
-//            for (int j = 0; j < rows.get(i).size(); ++j) {
-//                Vector3 current = rows.get(i).get(j);
-//                if (i == 0) {
-//                    a.set(rows.get(i+1).get(j)).minus(current);
-//                    a.negative();
-//                }else {
-//                    a.set(rows.get(i-1).get(j)) .minus(current);
-//                }
-//                if (i == rows.size()-1) {
-//                    b.set(rows.get(i-1).get(j)) .minus(current);
-//                    b.negative();
-//                }else {
-//                    b.set(rows.get(i+1).get(j)) .minus(current);
-//                }
-//                if (j == 0) {
-//                    c .set(rows.get(i).get(j+1)) .minus(current);
-//                    c.negative();
-//                }else {
-//                    c.set(rows.get(i).get(j-1)) .minus(current);
-//                }
-//                if (j == rows.get(i).size()-1) {
-//                    d.set(rows.get(i).get(j-1)) .minus(current);
-//                    d.negative();
-//                }else {
-//                    d.set(rows.get(i).get(j+1)) .minus(current);
-//                }
-//                Vector3 n = (tmp.set(a).cross(d) .plus(tmp2.set(d).cross(b)).plus(tmp3.set(b).cross(c)).plus(tmp4.set(c).cross(a)).normalize());
-//                row.get(j).set(n);
-//            }
-//            normalRows.add(row);
-//        }
+        for (int i = 0; i< rows.size(); ++i) {
+            List<Vector3> row = normalRows.get(i);
+            for (int j = 0; j < rows.get(i).size(); ++j) {
+                Vector3 current = rows.get(i).get(j);
+                if (i == 0) {
+                    a.set(rows.get(i+1).get(j)).minus(current);
+                    a.negative();
+                }else {
+                    a.set(rows.get(i-1).get(j)) .minus(current);
+                }
+                if (i == rows.size()-1) {
+                    b.set(rows.get(i-1).get(j)) .minus(current);
+                    b.negative();
+                }else {
+                    b.set(rows.get(i+1).get(j)) .minus(current);
+                }
+                if (j == 0) {
+                    c .set(rows.get(i).get(j+1)) .minus(current);
+                    c.negative();
+                }else {
+                    c.set(rows.get(i).get(j-1)) .minus(current);
+                }
+                if (j == rows.get(i).size()-1) {
+                    d.set(rows.get(i).get(j-1)) .minus(current);
+                    d.negative();
+                }else {
+                    d.set(rows.get(i).get(j+1)) .minus(current);
+                }
+                Vector3 n = (tmp.set(a).cross(d) .plus(tmp2.set(d).cross(b)).plus(tmp3.set(b).cross(c)).plus(tmp4.set(c).cross(a)).normalize());
+                row.get(j).set(n);
+            }
+            normalRows.add(row);
+        }
 
         //float[] normals = new float[this.resolution*this.resolution*6*3];
         float[] triangles = new float[this.resolution*this.resolution*12*3];
+
         //create triangles
         int normalsIndex = 0;
         int trianglesIndex = 0;
@@ -409,39 +422,39 @@ class SurfaceNode extends BaseNode
                 triangles[trianglesIndex++]=a.x;
                 triangles[trianglesIndex++]=a.y;
                 triangles[trianglesIndex++]=a.z;
-                triangles[trianglesIndex++] =normal.x;
-                triangles[trianglesIndex++] =normal.y;
-                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++] =na.x;
+                triangles[trianglesIndex++] =na.y;
+                triangles[trianglesIndex++] =na.z;
                 triangles[trianglesIndex++]=b.x;
                 triangles[trianglesIndex++]=b.y;
                 triangles[trianglesIndex++]=b.z;
-                triangles[trianglesIndex++] =normal.x;
-                triangles[trianglesIndex++] =normal.y;
-                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++] =nb.x;
+                triangles[trianglesIndex++] =nb.y;
+                triangles[trianglesIndex++] =nb.z;
                 triangles[trianglesIndex++]=c.x;
                 triangles[trianglesIndex++]=c.y;
                 triangles[trianglesIndex++]=c.z;
-                triangles[trianglesIndex++] =normal.x;
-                triangles[trianglesIndex++] =normal.y;
-                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++] =nc.x;
+                triangles[trianglesIndex++] =nc.y;
+                triangles[trianglesIndex++] =nc.z;
                 triangles[trianglesIndex++]=b.x;
                 triangles[trianglesIndex++]=b.y;
                 triangles[trianglesIndex++]=b.z;
-                triangles[trianglesIndex++] =normal.x;
-                triangles[trianglesIndex++] =normal.y;
-                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++] =nb.x;
+                triangles[trianglesIndex++] =nb.y;
+                triangles[trianglesIndex++] =nb.z;
                 triangles[trianglesIndex++]=d.x;
                 triangles[trianglesIndex++]=d.y;
                 triangles[trianglesIndex++]=d.z;
-                triangles[trianglesIndex++] =normal.x;
-                triangles[trianglesIndex++] =normal.y;
-                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++] =nd.x;
+                triangles[trianglesIndex++] =nd.y;
+                triangles[trianglesIndex++] =nd.z;
                 triangles[trianglesIndex++]=c.x;
                 triangles[trianglesIndex++]=c.y;
                 triangles[trianglesIndex++]=c.z;
-                triangles[trianglesIndex++] =normal.x;
-                triangles[trianglesIndex++] =normal.y;
-                triangles[trianglesIndex++] =normal.z;
+                triangles[trianglesIndex++] =nc.x;
+                triangles[trianglesIndex++] =nc.y;
+                triangles[trianglesIndex++] =nc.z;
 //                normals.add(na);
 //                normals.add(nb);
 //                normals.add(nc);
@@ -473,10 +486,10 @@ class SurfaceNode extends BaseNode
         }
 
         if (below != null) {
-//            makeSide(below.front, front, normals, triangles);
-//            makeSide(below.left, left, normals, triangles);
-//            makeSide(below.back, back, normals, triangles);
-//            makeSide(below.right, right, normals, triangles);
+            trianglesIndex = makeSide(below.front, front,triangles, trianglesIndex);
+            trianglesIndex = makeSide(below.left, left, triangles, trianglesIndex);
+            trianglesIndex = makeSide(below.back, back, triangles, trianglesIndex);
+            trianglesIndex = makeSide(below.right, right, triangles, trianglesIndex);
         }
 
 
@@ -490,7 +503,7 @@ class SurfaceNode extends BaseNode
 
         long t6 = System.currentTimeMillis();
 
-        System.out.println( "surface used" + (t6-t1) +  "millis");
+        System.out.println( "surface used" + (t6-t5) +  "millis");
     }
 
     public SurfaceNode copy() {
@@ -714,6 +727,7 @@ class SurfaceNode extends BaseNode
     public void addPoint(Vector3 from, Vector3 direction) {
         List<Vector3> cand = new ArrayList<Vector3>();
         List<Vector2d> uvCand = new ArrayList<Vector2d>();
+        float[] result = new float[5];
         float resolution = 1.0f/this.resolution;
         for (int i = 0; i < rows.size()-skip; i+=skip) {
             for (int j = 0; j < rows.get(0).size()-skip; j+=skip) {
@@ -722,28 +736,28 @@ class SurfaceNode extends BaseNode
                 Vector3 c = rows.get(i+skip).get(j);
                 Vector3 d = rows.get(i+skip).get(j+skip);
 
-                Vector3 result;
+
                 int r;
                 float s,t;
-                Object[] objs = intersect(from, direction, a, b, c);
-                r = (Integer)objs[0];
-                result = (Vector3)objs[1];
-                s = (Float)objs[2];
-                t = (Float)objs[3];
+                r = intersect2(from.x, from.y, from.z, direction.x, direction.y, direction.z, a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z, result);
+
                 if (r==1) {
-                    cand.add(result);
+                    Vector3 vec = new Vector3(result[0],result[1], result[2]);
+                    s = result[3];
+                    t = result[4];
+                    cand.add(vec);
                     s*=resolution;
                     t*=resolution;
                     uvCand.add(new Vector2d(j*resolution+s*skip, i*resolution+t*skip));
                 }
 
-                objs = intersect(from, direction, d, c, b);
-                r = (Integer)objs[0];
-                result = (Vector3)objs[1];
-                s = (Float)objs[2];
-                t = (Float)objs[3];
+                r = intersect2(from.x, from.y, from.z, direction.x, direction.y, direction.z, a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z, result);
+
                 if (r==1) {
-                    cand.add(result);
+                    Vector3 vec = new Vector3(result[0],result[1], result[2]);
+                    s = result[3];
+                    t = result[4];
+                    cand.add(vec);
                     s = 1.0f-s;
                     t = 1.0f-t;
                     s*=resolution;

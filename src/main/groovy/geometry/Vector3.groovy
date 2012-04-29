@@ -20,9 +20,14 @@ class Vector3 {
     }
 
     Vector3(float x, float y, float z) {
+        if (x == Float.NaN) stop()
         this.x = x
         this.y = y
         this.z = z
+    }
+
+    void stop() {
+        println "topping"
     }
 
     float getX() {
@@ -38,6 +43,8 @@ class Vector3 {
     }
 
     Vector3 set(float x, float y, float z) {
+
+        if (x == Float.NaN) stop()
         this.x = x
         this.y = y
         this.z = z
@@ -45,6 +52,8 @@ class Vector3 {
     }
 
     Vector3 set(Vector3 o) {
+
+        if (o.x == Float.NaN) stop()
         this.x = o.x
         this.y = o.y
         this.z = o.z
