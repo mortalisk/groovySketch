@@ -85,6 +85,8 @@ class BoxNode extends BaseNode {
         surfaces.add(rightNode);
         surfaces.add(topNode);
         surfaces.add(bottomNode);
+
+        diffuse.w = 0.1
     }
 
 
@@ -149,7 +151,7 @@ class BoxNode extends BaseNode {
 
         drawChildren();
 
-        glColor4f(0.5,0.5,0.5,1.0);
+        //glColor4f(0.5,0.5,0.5,1.0);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         drawSelf();
@@ -170,7 +172,7 @@ class BoxNode extends BaseNode {
         }
 
         surfaces.each {
-            glColor4f(0.5,0.5,0.5,0.5);
+            //glColor4f(0.5,0.5,0.5,0.5);
             it.shape.drawShape(ambient, diffuse);
         }
 

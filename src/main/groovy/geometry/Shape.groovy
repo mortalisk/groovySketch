@@ -51,7 +51,7 @@ class Shape {
         specular.rewind()
         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 128.0f );
         glMaterial(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-        float[] a = [diffuse.x/3, diffuse.y/3, diffuse.z/3, ambient.w ];
+        float[] a = [diffuse.x/3, diffuse.y/3, diffuse.z/3, diffuse.w ];
         FloatBuffer amb = BufferUtils.createFloatBuffer(4);
         amb.put(a)
         amb.rewind()

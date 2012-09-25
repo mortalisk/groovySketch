@@ -21,7 +21,7 @@ abstract class BaseNode {
     BaseNode parent
 
     def diffuse = new Vector4d(1.0,1.0,1.0,1.0)
-    def ambient = new Vector4d(1.0,1.0,1.0,1.0)
+    def ambient = new Vector4d(0.5,0.5,0.5,1.0)
 
     BaseNode(String name) {
           this.name = name

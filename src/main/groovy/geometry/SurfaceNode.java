@@ -15,7 +15,7 @@ class SurfaceNode extends BaseNode
 
     enum Axis {X, Y, Z};
 
-    int resolution = 400;
+    int resolution = 100;
     int skip = 1;
 
     List<Vector2d> uvCoordinateSpline = new ArrayList<Vector2d>();
@@ -48,7 +48,7 @@ class SurfaceNode extends BaseNode
             ArrayList<Vector3> row = new ArrayList<Vector3>(resolution);
             ArrayList<Vector3> normalrow = new ArrayList<Vector3>(resolution);
             for(int j = 0; j<resolution; j++) {
-                row.add(new Vector3());
+                row.add(new Vector3(j/(float)resolution, i/(float)resolution, 0f));
                 normalrow.add(new Vector3());
             }
             rows.add(row);
@@ -317,7 +317,7 @@ class SurfaceNode extends BaseNode
 
         float resolution = (float)this.resolution;
 
-        for (int zi = 0;zi<this.resolution;++zi) {
+/*        for (int zi = 0;zi<this.resolution;++zi) {
             List<Vector3> row = rows.get(zi);
             float zif = zi/resolution;
             Vector3 rowLeft = a.set(frontLeft).multiply(1.0 - zif).plus(tmp.set(backLeft).multiply(zif));
@@ -337,7 +337,7 @@ class SurfaceNode extends BaseNode
                 Vector3 point = leftRight.plus(diff);
                 row.get(xi).set(point);
             }
-        }
+        }*/
         long t2 = System.currentTimeMillis();
 
         System.out.println( "rows used" + (t2-t1) +  "millis");

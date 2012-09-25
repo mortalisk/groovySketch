@@ -27,6 +27,11 @@ import geometry.Camera
 import java.awt.Cursor
 import java.awt.Point
 import java.awt.image.BufferedImage
+import org.lwjgl.opengl.PixelFormat
+import org.lwjgl.opengl.ContextAttribs
+import java.awt.Panel
+import javax.swing.JPanel
+import org.lwjgl.opengl.GL20
 
 class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelListener, ComponentListener{
     Scene scene = new Scene();
@@ -41,12 +46,87 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
     float[] light_diffuse = [0.33, 0.33, 0.33, 1.0]
     float[]  light_ambient = [0.2, 0.2, 0.2, 1.0]  /* light. */
     float[]  light_specular = [1.0,1.0,1.0, 1.0]
-    float[]  light_position1 = [0.0, 1.0, 1.0, 0.0] /* Infinite light location. */
-    float[]  light_position2 = [1.0, 1.0, -1.0, 0.0]
-    float[]  light_position3 = [-1.0, 1.0, -1.0, 0.0]
+    float[]  light_position1 = [0.0, 100.0, 100.0, 0.0] /* Infinite light location. */
+    float[]  light_position2 = [100.0, 100.0, -100.0, 0.0]
+    float[]  light_position3 = [-100.0, 100.0, -100.0, 0.0]
+
+    int vertexShader, fragmentShader, program;
+
+    def vertexShaderString = '''
+#version 110
+
+varying vec3 vN;
+varying vec3 v;
+void main(void)
+{
+   v = vec3(gl_ModelViewMatrix * gl_Vertex);
+   vN = normalize(gl_NormalMatrix * gl_Normal);
+   gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+}
+                        '''
+
+    def fragmentShaderString = '''
+varying vec3 vN;
+varying vec3 v;
+#define MAX_LIGHTS 3
+void main (void)
+{
+   vec3 N = normalize(vN);
+   vec4 finalColor = vec4(0.0, 0.0, 0.0, 0.0);
+
+   for (int i=0;i<MAX_LIGHTS;i++)
+   {
+      vec3 L = normalize(gl_LightSource[i].position.xyz - v);
+      vec3 E = normalize(-v); // we are in Eye Coordinates, so EyePos is (0,0,0)
+      vec3 R = normalize(-reflect(L,N));
+
+      //calculate Ambient Term:
+      vec4 Iamb = gl_FrontLightProduct[i].ambient;
+      //calculate Diffuse Term:
+      vec4 Idiff = gl_FrontLightProduct[i].diffuse * max(dot(N,L), 0.0);
+      Idiff = clamp(Idiff, 0.0, 1.0);
+
+      // calculate Specular Term:
+      vec4 Ispec = gl_FrontLightProduct[i].specular
+             * pow(max(dot(R,E),0.0),gl_FrontMaterial.shininess);
+      Ispec = clamp(Ispec, 0.0, 1.0);
+
+      finalColor += Iamb + Idiff;// Ispec;
+   }
+
+   // write Total Color:
+   gl_FragColor = finalColor;
+}
+'''
+
+        /*'''
+varying vec3 N;
+varying vec3 v;
+void main (void)
+{
+   vec3 L = normalize(gl_LightSource[0].position.xyz - v);
+   vec3 E = normalize(-v); // we are in Eye Coordinates, so EyePos is (0,0,0)
+   vec3 R = normalize(-reflect(L,N));
+
+   //calculate Ambient Term:
+   vec4 Iamb = gl_FrontLightProduct[0].ambient;
+
+   //calculate Diffuse Term:
+   vec4 Idiff = gl_FrontLightProduct[0].diffuse * max(dot(N,L), 0.0);
+   Idiff = clamp(Idiff, 0.0, 1.0);
+
+   // calculate Specular Term:
+   vec4 Ispec = gl_FrontLightProduct[0].specular
+                * pow(max(dot(R,E),0.0),0.3*gl_FrontMaterial.shininess);
+   Ispec = clamp(Ispec, 0.0, 1.0);
+   // write Total Color:
+   gl_FragColor = gl_FrontLightModelProduct.sceneColor + Iamb + Idiff + Ispec;
+                        '''
+}*/
 
 
     MyGlWidget() {
+        super(null,new PixelFormat(8, 24, 0),null, new ContextAttribs(3, 2).withProfileCore(false))
         addMouseListener(this)
         addMouseMotionListener(this)
         addMouseWheelListener(this)
@@ -218,7 +298,30 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
         sceneChanged(scene);
     }
 
+    void makeShaderProgram() {
+        vertexShader = GL20.glCreateShader(GL20.GL_VERTEX_SHADER)
+        fragmentShader = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER)
+        GL20.glShaderSource(vertexShader, vertexShaderString)
+        GL20.glShaderSource(fragmentShader, fragmentShaderString)
+        GL20.glCompileShader(vertexShader)
+        GL20.glCompileShader(fragmentShader)
+
+        program = GL20.glCreateProgram()
+        GL20.glAttachShader(program, vertexShader)
+        GL20.glAttachShader(program, fragmentShader)
+        GL20.glLinkProgram(program)
+
+        int program_ok = GL20.glGetProgram(program, GL20.GL_LINK_STATUS)
+        if (!program_ok) {
+            println "Failed to link shader program:"
+        }
+
+    }
+
     protected void initGL() {
+
+        makeShaderProgram()
+
         glClearColor(0.8,0.8,1,0)
 
         glEnable (GL_BLEND);
@@ -270,13 +373,17 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
 
     protected void paintGL() {
 
+        GL20.glUseProgram(program)
+
+        //glLightModelf(GL_LIGHT_MODEL_LOCAL_VIEWER, 1.0f);
+        glViewport(0,0,width,height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         gluPerspective((float)scene.camera.fov*180/Math.PI, aspect, 0.1f, 1000f);
 
-        glViewport(0,0,width,height);
+
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
@@ -295,7 +402,7 @@ class MyGlWidget extends AWTGLCanvas implements MouseInputListener, MouseWheelLi
         scene.cursor.draw()
 
 
-        glLightModelf(GL_LIGHT_MODEL_LOCAL_VIEWER, 1.0f);
+
 
         swapBuffers();
         repaint();
